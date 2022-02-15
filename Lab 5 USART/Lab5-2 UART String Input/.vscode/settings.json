@@ -1,0 +1,22 @@
+{
+    "files.associations": {
+        "delay.h": "c",
+        "io.h": "c",
+        "inttypes.h": "c",
+        "sfr_defs.h": "c",
+        "ctype.h": "c",
+        "math.h": "c",
+        "iom328p.h": "c",
+        "setbaud.h": "c",
+        "portpins.h": "c",
+        "string": "c",
+        "array": "c",
+        "string_view": "c",
+        "usart.h": "c",
+        "stdlib.h": "c",
+        "cctype": "c",
+        "interrupt.h": "c",
+        "string.h": "c",
+        "uart.h": "c"
+    }
+}
