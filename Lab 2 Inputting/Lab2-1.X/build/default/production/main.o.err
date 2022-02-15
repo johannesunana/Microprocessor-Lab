@@ -1,0 +1,4 @@
+Message[302] C:\MICROPROCESSOR LAB\LAB 2\LAB2-1_UNANA.X\MAIN.ASM 14 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[305] C:\MICROPROCESSOR LAB\LAB 2\LAB2-1_UNANA.X\MAIN.ASM 18 : Using default destination of 1 (file).
+Message[302] C:\MICROPROCESSOR LAB\LAB 2\LAB2-1_UNANA.X\MAIN.ASM 18 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[305] C:\MICROPROCESSOR LAB\LAB 2\LAB2-1_UNANA.X\MAIN.ASM 21 : Using default destination of 1 (file).
