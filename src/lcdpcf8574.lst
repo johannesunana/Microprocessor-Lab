@@ -1,0 +1,1587 @@
+   1               		.file	"lcdpcf8574.c"
+   2               	__SP_H__ = 0x3e
+   3               	__SP_L__ = 0x3d
+   4               	__SREG__ = 0x3f
+   5               	__tmp_reg__ = 0
+   6               	__zero_reg__ = 1
+   7               		.text
+   8               	.Ltext0:
+   9               		.cfi_sections	.debug_frame
+  11               	toggle_e:
+  12               	.LFB2:
+  13               		.file 1 "src/lcdpcf8574.c"
+   1:src/lcdpcf8574.c **** /*
+   2:src/lcdpcf8574.c **** lcdpcf8574 lib 0x03
+   3:src/lcdpcf8574.c **** copyright (c) Davide Gironi, 2013
+   4:src/lcdpcf8574.c **** Released under GPLv3.
+   5:src/lcdpcf8574.c **** Please refer to LICENSE file for licensing information.
+   6:src/lcdpcf8574.c **** */
+   7:src/lcdpcf8574.c **** 
+   8:src/lcdpcf8574.c **** #define F_CPU 1000000
+   9:src/lcdpcf8574.c **** #include <inttypes.h>
+  10:src/lcdpcf8574.c **** #include <avr/io.h>
+  11:src/lcdpcf8574.c **** #include <avr/pgmspace.h>
+  12:src/lcdpcf8574.c **** 
+  13:src/lcdpcf8574.c **** #include "lib/pcf8574.h"
+  14:src/lcdpcf8574.c **** 
+  15:src/lcdpcf8574.c **** #include "lib/lcdpcf8574.h"
+  16:src/lcdpcf8574.c **** 
+  17:src/lcdpcf8574.c **** #define lcd_e_delay()   __asm__ __volatile__( "rjmp 1f\n 1:" );
+  18:src/lcdpcf8574.c **** #define lcd_e_toggle()  toggle_e()
+  19:src/lcdpcf8574.c **** 
+  20:src/lcdpcf8574.c **** #if LCD_LINES==1
+  21:src/lcdpcf8574.c **** #define LCD_FUNCTION_DEFAULT    LCD_FUNCTION_4BIT_1LINE 
+  22:src/lcdpcf8574.c **** #else
+  23:src/lcdpcf8574.c **** #define LCD_FUNCTION_DEFAULT    LCD_FUNCTION_4BIT_2LINES 
+  24:src/lcdpcf8574.c **** #endif
+  25:src/lcdpcf8574.c **** 
+  26:src/lcdpcf8574.c **** volatile uint8_t dataport = 0;
+  27:src/lcdpcf8574.c **** 
+  28:src/lcdpcf8574.c **** /* 
+  29:src/lcdpcf8574.c **** ** function prototypes 
+  30:src/lcdpcf8574.c **** */
+  31:src/lcdpcf8574.c **** static void toggle_e(void);
+  32:src/lcdpcf8574.c **** 
+  33:src/lcdpcf8574.c **** /*
+  34:src/lcdpcf8574.c **** ** local functions
+  35:src/lcdpcf8574.c **** */
+  36:src/lcdpcf8574.c **** 
+  37:src/lcdpcf8574.c **** 
+  38:src/lcdpcf8574.c **** 
+  39:src/lcdpcf8574.c **** /*************************************************************************
+  40:src/lcdpcf8574.c ****  delay loop for small accurate delays: 16-bit counter, 4 cycles/loop
+  41:src/lcdpcf8574.c **** *************************************************************************/
+  42:src/lcdpcf8574.c **** static inline void _delayFourCycles(unsigned int __count)
+  43:src/lcdpcf8574.c **** {
+  44:src/lcdpcf8574.c ****     if ( __count == 0 )    
+  45:src/lcdpcf8574.c ****         __asm__ __volatile__( "rjmp 1f\n 1:" );    // 2 cycles
+  46:src/lcdpcf8574.c ****     else
+  47:src/lcdpcf8574.c ****         __asm__ __volatile__ (
+  48:src/lcdpcf8574.c ****     	    "1: sbiw %0,1" "\n\t"                  
+  49:src/lcdpcf8574.c ****     	    "brne 1b"                              // 4 cycles/loop
+  50:src/lcdpcf8574.c ****     	    : "=w" (__count)
+  51:src/lcdpcf8574.c ****     	    : "0" (__count)
+  52:src/lcdpcf8574.c ****     	   );
+  53:src/lcdpcf8574.c **** }
+  54:src/lcdpcf8574.c **** 
+  55:src/lcdpcf8574.c **** 
+  56:src/lcdpcf8574.c **** /************************************************************************* 
+  57:src/lcdpcf8574.c **** delay for a minimum of <us> microseconds
+  58:src/lcdpcf8574.c **** the number of loops is calculated at compile-time from MCU clock frequency
+  59:src/lcdpcf8574.c **** *************************************************************************/
+  60:src/lcdpcf8574.c **** #define delay(us)  _delayFourCycles( ( ( 1*(F_CPU/4000) )*us)/1000 )
+  61:src/lcdpcf8574.c **** 
+  62:src/lcdpcf8574.c **** 
+  63:src/lcdpcf8574.c **** /* toggle Enable Pin to initiate write */
+  64:src/lcdpcf8574.c **** static void toggle_e(void)
+  65:src/lcdpcf8574.c **** {
+  14               		.loc 1 65 0
+  15               		.cfi_startproc
+  16               	/* prologue: function */
+  17               	/* frame size = 0 */
+  18               	/* stack size = 0 */
+  19               	.L__stack_usage = 0
+  66:src/lcdpcf8574.c **** 	pcf8574_setoutputpinhigh(LCD_PCF8574_DEVICEID, LCD_E_PIN);
+  20               		.loc 1 66 0
+  21 0000 62E0      		ldi r22,lo8(2)
+  22 0002 80E0      		ldi r24,0
+  23 0004 0E94 0000 		call pcf8574_setoutputpinhigh
+  24               	.LVL0:
+  67:src/lcdpcf8574.c ****     lcd_e_delay();
+  25               		.loc 1 67 0
+  26               	/* #APP */
+  27               	 ;  67 "src/lcdpcf8574.c" 1
+  28 0008 00C0      		rjmp 1f
+  29               	 1:
+  30               	 ;  0 "" 2
+  68:src/lcdpcf8574.c ****     pcf8574_setoutputpinlow(LCD_PCF8574_DEVICEID, LCD_E_PIN);
+  31               		.loc 1 68 0
+  32               	/* #NOAPP */
+  33 000a 62E0      		ldi r22,lo8(2)
+  34 000c 80E0      		ldi r24,0
+  35 000e 0C94 0000 		jmp pcf8574_setoutputpinlow
+  36               	.LVL1:
+  37               		.cfi_endproc
+  38               	.LFE2:
+  41               	lcd_write:
+  42               	.LFB3:
+  69:src/lcdpcf8574.c **** }
+  70:src/lcdpcf8574.c **** 
+  71:src/lcdpcf8574.c **** 
+  72:src/lcdpcf8574.c **** /*************************************************************************
+  73:src/lcdpcf8574.c **** Low-level function to write byte to LCD controller
+  74:src/lcdpcf8574.c **** Input:    data   byte to write to LCD
+  75:src/lcdpcf8574.c ****           rs     1: write data    
+  76:src/lcdpcf8574.c ****                  0: write instruction
+  77:src/lcdpcf8574.c **** Returns:  none
+  78:src/lcdpcf8574.c **** *************************************************************************/
+  79:src/lcdpcf8574.c **** static void lcd_write(uint8_t data,uint8_t rs) 
+  80:src/lcdpcf8574.c **** {
+  43               		.loc 1 80 0
+  44               		.cfi_startproc
+  45               	.LVL2:
+  46 0012 CF93      		push r28
+  47               	.LCFI0:
+  48               		.cfi_def_cfa_offset 3
+  49               		.cfi_offset 28, -2
+  50               	/* prologue: function */
+  51               	/* frame size = 0 */
+  52               	/* stack size = 1 */
+  53               	.L__stack_usage = 1
+  54 0014 C82F      		mov r28,r24
+  81:src/lcdpcf8574.c **** 	if (rs) /* write data        (RS=1, RW=0) */
+  82:src/lcdpcf8574.c **** 		dataport |= _BV(LCD_RS_PIN);
+  55               		.loc 1 82 0
+  56 0016 8091 0000 		lds r24,dataport
+  57               	.LVL3:
+  81:src/lcdpcf8574.c **** 	if (rs) /* write data        (RS=1, RW=0) */
+  58               		.loc 1 81 0
+  59 001a 6623      		tst r22
+  60 001c 01F0      		breq .L3
+  61               		.loc 1 82 0
+  62 001e 8160      		ori r24,lo8(1)
+  63 0020 00C0      		rjmp .L34
+  64               	.L3:
+  83:src/lcdpcf8574.c **** 	else /* write instruction (RS=0, RW=0) */
+  84:src/lcdpcf8574.c **** 		dataport &= ~_BV(LCD_RS_PIN);
+  65               		.loc 1 84 0
+  66 0022 8E7F      		andi r24,lo8(-2)
+  67               	.L34:
+  68 0024 8093 0000 		sts dataport,r24
+  85:src/lcdpcf8574.c **** 	dataport &= ~_BV(LCD_RW_PIN);
+  69               		.loc 1 85 0
+  70 0028 8091 0000 		lds r24,dataport
+  71 002c 8D7F      		andi r24,lo8(-3)
+  72 002e 8093 0000 		sts dataport,r24
+  86:src/lcdpcf8574.c **** 	pcf8574_setoutput(LCD_PCF8574_DEVICEID, dataport);
+  73               		.loc 1 86 0
+  74 0032 6091 0000 		lds r22,dataport
+  75               	.LVL4:
+  76 0036 80E0      		ldi r24,0
+  77 0038 0E94 0000 		call pcf8574_setoutput
+  78               	.LVL5:
+  87:src/lcdpcf8574.c **** 
+  88:src/lcdpcf8574.c **** 	/* output high nibble first */
+  89:src/lcdpcf8574.c ****     dataport &= ~_BV(LCD_DATA3_PIN);
+  79               		.loc 1 89 0
+  80 003c 8091 0000 		lds r24,dataport
+  81 0040 8F77      		andi r24,lo8(127)
+  82 0042 8093 0000 		sts dataport,r24
+  90:src/lcdpcf8574.c ****     dataport &= ~_BV(LCD_DATA2_PIN);
+  83               		.loc 1 90 0
+  84 0046 8091 0000 		lds r24,dataport
+  85 004a 8F7B      		andi r24,lo8(-65)
+  86 004c 8093 0000 		sts dataport,r24
+  91:src/lcdpcf8574.c ****     dataport &= ~_BV(LCD_DATA1_PIN);
+  87               		.loc 1 91 0
+  88 0050 8091 0000 		lds r24,dataport
+  89 0054 8F7D      		andi r24,lo8(-33)
+  90 0056 8093 0000 		sts dataport,r24
+  92:src/lcdpcf8574.c ****     dataport &= ~_BV(LCD_DATA0_PIN);
+  91               		.loc 1 92 0
+  92 005a 8091 0000 		lds r24,dataport
+  93 005e 8F7E      		andi r24,lo8(-17)
+  94 0060 8093 0000 		sts dataport,r24
+  93:src/lcdpcf8574.c **** 	if(data & 0x80) dataport |= _BV(LCD_DATA3_PIN);
+  95               		.loc 1 93 0
+  96 0064 C7FF      		sbrs r28,7
+  97 0066 00C0      		rjmp .L5
+  98               		.loc 1 93 0 is_stmt 0 discriminator 1
+  99 0068 8091 0000 		lds r24,dataport
+ 100 006c 8068      		ori r24,lo8(-128)
+ 101 006e 8093 0000 		sts dataport,r24
+ 102               	.L5:
+  94:src/lcdpcf8574.c **** 	if(data & 0x40) dataport |= _BV(LCD_DATA2_PIN);
+ 103               		.loc 1 94 0 is_stmt 1
+ 104 0072 C6FF      		sbrs r28,6
+ 105 0074 00C0      		rjmp .L6
+ 106               		.loc 1 94 0 is_stmt 0 discriminator 1
+ 107 0076 8091 0000 		lds r24,dataport
+ 108 007a 8064      		ori r24,lo8(64)
+ 109 007c 8093 0000 		sts dataport,r24
+ 110               	.L6:
+  95:src/lcdpcf8574.c **** 	if(data & 0x20) dataport |= _BV(LCD_DATA1_PIN);
+ 111               		.loc 1 95 0 is_stmt 1
+ 112 0080 C5FF      		sbrs r28,5
+ 113 0082 00C0      		rjmp .L7
+ 114               		.loc 1 95 0 is_stmt 0 discriminator 1
+ 115 0084 8091 0000 		lds r24,dataport
+ 116 0088 8062      		ori r24,lo8(32)
+ 117 008a 8093 0000 		sts dataport,r24
+ 118               	.L7:
+  96:src/lcdpcf8574.c **** 	if(data & 0x10) dataport |= _BV(LCD_DATA0_PIN);
+ 119               		.loc 1 96 0 is_stmt 1
+ 120 008e C4FF      		sbrs r28,4
+ 121 0090 00C0      		rjmp .L8
+ 122               		.loc 1 96 0 is_stmt 0 discriminator 1
+ 123 0092 8091 0000 		lds r24,dataport
+ 124 0096 8061      		ori r24,lo8(16)
+ 125 0098 8093 0000 		sts dataport,r24
+ 126               	.L8:
+  97:src/lcdpcf8574.c **** 	pcf8574_setoutput(LCD_PCF8574_DEVICEID, dataport);
+ 127               		.loc 1 97 0 is_stmt 1
+ 128 009c 6091 0000 		lds r22,dataport
+ 129 00a0 80E0      		ldi r24,0
+ 130 00a2 0E94 0000 		call pcf8574_setoutput
+ 131               	.LVL6:
+  98:src/lcdpcf8574.c **** 	lcd_e_toggle();
+ 132               		.loc 1 98 0
+ 133 00a6 0E94 0000 		call toggle_e
+ 134               	.LVL7:
+  99:src/lcdpcf8574.c **** 
+ 100:src/lcdpcf8574.c **** 	/* output low nibble */
+ 101:src/lcdpcf8574.c **** 	dataport &= ~_BV(LCD_DATA3_PIN);
+ 135               		.loc 1 101 0
+ 136 00aa 8091 0000 		lds r24,dataport
+ 137 00ae 8F77      		andi r24,lo8(127)
+ 138 00b0 8093 0000 		sts dataport,r24
+ 102:src/lcdpcf8574.c **** 	dataport &= ~_BV(LCD_DATA2_PIN);
+ 139               		.loc 1 102 0
+ 140 00b4 8091 0000 		lds r24,dataport
+ 141 00b8 8F7B      		andi r24,lo8(-65)
+ 142 00ba 8093 0000 		sts dataport,r24
+ 103:src/lcdpcf8574.c **** 	dataport &= ~_BV(LCD_DATA1_PIN);
+ 143               		.loc 1 103 0
+ 144 00be 8091 0000 		lds r24,dataport
+ 145 00c2 8F7D      		andi r24,lo8(-33)
+ 146 00c4 8093 0000 		sts dataport,r24
+ 104:src/lcdpcf8574.c **** 	dataport &= ~_BV(LCD_DATA0_PIN);
+ 147               		.loc 1 104 0
+ 148 00c8 8091 0000 		lds r24,dataport
+ 149 00cc 8F7E      		andi r24,lo8(-17)
+ 150 00ce 8093 0000 		sts dataport,r24
+ 105:src/lcdpcf8574.c **** 	if(data & 0x08) dataport |= _BV(LCD_DATA3_PIN);
+ 151               		.loc 1 105 0
+ 152 00d2 C3FF      		sbrs r28,3
+ 153 00d4 00C0      		rjmp .L9
+ 154               		.loc 1 105 0 is_stmt 0 discriminator 1
+ 155 00d6 8091 0000 		lds r24,dataport
+ 156 00da 8068      		ori r24,lo8(-128)
+ 157 00dc 8093 0000 		sts dataport,r24
+ 158               	.L9:
+ 106:src/lcdpcf8574.c **** 	if(data & 0x04) dataport |= _BV(LCD_DATA2_PIN);
+ 159               		.loc 1 106 0 is_stmt 1
+ 160 00e0 C2FF      		sbrs r28,2
+ 161 00e2 00C0      		rjmp .L10
+ 162               		.loc 1 106 0 is_stmt 0 discriminator 1
+ 163 00e4 8091 0000 		lds r24,dataport
+ 164 00e8 8064      		ori r24,lo8(64)
+ 165 00ea 8093 0000 		sts dataport,r24
+ 166               	.L10:
+ 107:src/lcdpcf8574.c **** 	if(data & 0x02) dataport |= _BV(LCD_DATA1_PIN);
+ 167               		.loc 1 107 0 is_stmt 1
+ 168 00ee C1FF      		sbrs r28,1
+ 169 00f0 00C0      		rjmp .L11
+ 170               		.loc 1 107 0 is_stmt 0 discriminator 1
+ 171 00f2 8091 0000 		lds r24,dataport
+ 172 00f6 8062      		ori r24,lo8(32)
+ 173 00f8 8093 0000 		sts dataport,r24
+ 174               	.L11:
+ 108:src/lcdpcf8574.c **** 	if(data & 0x01) dataport |= _BV(LCD_DATA0_PIN);
+ 175               		.loc 1 108 0 is_stmt 1
+ 176 00fc C0FF      		sbrs r28,0
+ 177 00fe 00C0      		rjmp .L12
+ 178               		.loc 1 108 0 is_stmt 0 discriminator 1
+ 179 0100 8091 0000 		lds r24,dataport
+ 180 0104 8061      		ori r24,lo8(16)
+ 181 0106 8093 0000 		sts dataport,r24
+ 182               	.L12:
+ 109:src/lcdpcf8574.c **** 	pcf8574_setoutput(LCD_PCF8574_DEVICEID, dataport);
+ 183               		.loc 1 109 0 is_stmt 1
+ 184 010a 6091 0000 		lds r22,dataport
+ 185 010e 80E0      		ldi r24,0
+ 186 0110 0E94 0000 		call pcf8574_setoutput
+ 187               	.LVL8:
+ 110:src/lcdpcf8574.c **** 	lcd_e_toggle();
+ 188               		.loc 1 110 0
+ 189 0114 0E94 0000 		call toggle_e
+ 190               	.LVL9:
+ 111:src/lcdpcf8574.c **** 
+ 112:src/lcdpcf8574.c **** 	/* all data pins high (inactive) */
+ 113:src/lcdpcf8574.c **** 	dataport |= _BV(LCD_DATA0_PIN);
+ 191               		.loc 1 113 0
+ 192 0118 8091 0000 		lds r24,dataport
+ 193 011c 8061      		ori r24,lo8(16)
+ 194 011e 8093 0000 		sts dataport,r24
+ 114:src/lcdpcf8574.c **** 	dataport |= _BV(LCD_DATA1_PIN);
+ 195               		.loc 1 114 0
+ 196 0122 8091 0000 		lds r24,dataport
+ 197 0126 8062      		ori r24,lo8(32)
+ 198 0128 8093 0000 		sts dataport,r24
+ 115:src/lcdpcf8574.c **** 	dataport |= _BV(LCD_DATA2_PIN);
+ 199               		.loc 1 115 0
+ 200 012c 8091 0000 		lds r24,dataport
+ 201 0130 8064      		ori r24,lo8(64)
+ 202 0132 8093 0000 		sts dataport,r24
+ 116:src/lcdpcf8574.c **** 	dataport |= _BV(LCD_DATA3_PIN);
+ 203               		.loc 1 116 0
+ 204 0136 8091 0000 		lds r24,dataport
+ 205 013a 8068      		ori r24,lo8(-128)
+ 206 013c 8093 0000 		sts dataport,r24
+ 117:src/lcdpcf8574.c **** 	pcf8574_setoutput(LCD_PCF8574_DEVICEID, dataport);
+ 207               		.loc 1 117 0
+ 208 0140 6091 0000 		lds r22,dataport
+ 209 0144 80E0      		ldi r24,0
+ 210               	/* epilogue start */
+ 118:src/lcdpcf8574.c **** }
+ 211               		.loc 1 118 0
+ 212 0146 CF91      		pop r28
+ 213               	.LVL10:
+ 117:src/lcdpcf8574.c **** 	pcf8574_setoutput(LCD_PCF8574_DEVICEID, dataport);
+ 214               		.loc 1 117 0
+ 215 0148 0C94 0000 		jmp pcf8574_setoutput
+ 216               	.LVL11:
+ 217               		.cfi_endproc
+ 218               	.LFE3:
+ 221               	lcd_read.constprop.0:
+ 222               	.LFB20:
+ 119:src/lcdpcf8574.c **** 
+ 120:src/lcdpcf8574.c **** 
+ 121:src/lcdpcf8574.c **** /*************************************************************************
+ 122:src/lcdpcf8574.c **** Low-level function to read byte from LCD controller
+ 123:src/lcdpcf8574.c **** Input:    rs     1: read data    
+ 124:src/lcdpcf8574.c ****                  0: read busy flag / address counter
+ 125:src/lcdpcf8574.c **** Returns:  byte read from LCD controller
+ 126:src/lcdpcf8574.c **** *************************************************************************/
+ 127:src/lcdpcf8574.c **** static uint8_t lcd_read(uint8_t rs) 
+ 223               		.loc 1 127 0
+ 224               		.cfi_startproc
+ 225 014c CF93      		push r28
+ 226               	.LCFI1:
+ 227               		.cfi_def_cfa_offset 3
+ 228               		.cfi_offset 28, -2
+ 229               	/* prologue: function */
+ 230               	/* frame size = 0 */
+ 231               	/* stack size = 1 */
+ 232               	.L__stack_usage = 1
+ 233               	.LVL12:
+ 128:src/lcdpcf8574.c **** {
+ 129:src/lcdpcf8574.c ****     uint8_t data;
+ 130:src/lcdpcf8574.c **** 
+ 131:src/lcdpcf8574.c ****     if (rs) /* write data (RS=1, RW=0) */
+ 132:src/lcdpcf8574.c ****     	dataport |= _BV(LCD_RS_PIN);
+ 133:src/lcdpcf8574.c ****     else /* write instruction (RS=0, RW=0) */
+ 134:src/lcdpcf8574.c ****     	dataport &= ~_BV(LCD_RS_PIN);
+ 234               		.loc 1 134 0
+ 235 014e 8091 0000 		lds r24,dataport
+ 236 0152 8E7F      		andi r24,lo8(-2)
+ 237 0154 8093 0000 		sts dataport,r24
+ 135:src/lcdpcf8574.c ****     dataport |= _BV(LCD_RW_PIN);
+ 238               		.loc 1 135 0
+ 239 0158 8091 0000 		lds r24,dataport
+ 240 015c 8260      		ori r24,lo8(2)
+ 241 015e 8093 0000 		sts dataport,r24
+ 136:src/lcdpcf8574.c ****     pcf8574_setoutput(LCD_PCF8574_DEVICEID, dataport);
+ 242               		.loc 1 136 0
+ 243 0162 6091 0000 		lds r22,dataport
+ 244 0166 80E0      		ldi r24,0
+ 245 0168 0E94 0000 		call pcf8574_setoutput
+ 246               	.LVL13:
+ 137:src/lcdpcf8574.c **** 
+ 138:src/lcdpcf8574.c **** 	/* read high nibble first */
+ 139:src/lcdpcf8574.c ****     pcf8574_setoutputpinhigh(LCD_PCF8574_DEVICEID, LCD_E_PIN);
+ 247               		.loc 1 139 0
+ 248 016c 62E0      		ldi r22,lo8(2)
+ 249 016e 80E0      		ldi r24,0
+ 250 0170 0E94 0000 		call pcf8574_setoutputpinhigh
+ 251               	.LVL14:
+ 140:src/lcdpcf8574.c **** 	lcd_e_delay();
+ 252               		.loc 1 140 0
+ 253               	/* #APP */
+ 254               	 ;  140 "src/lcdpcf8574.c" 1
+ 255 0174 00C0      		rjmp 1f
+ 256               	 1:
+ 257               	 ;  0 "" 2
+ 258               	.LVL15:
+ 141:src/lcdpcf8574.c ****     data = 0;
+ 142:src/lcdpcf8574.c ****     if(!pcf8574_getinputpin(LCD_PCF8574_DEVICEID, LCD_DATA0_PIN)) data |= 0x10;
+ 259               		.loc 1 142 0
+ 260               	/* #NOAPP */
+ 261 0176 64E0      		ldi r22,lo8(4)
+ 262 0178 80E0      		ldi r24,0
+ 263 017a 0E94 0000 		call pcf8574_getinputpin
+ 264               	.LVL16:
+ 265 017e 8111      		cpse r24,__zero_reg__
+ 266 0180 00C0      		rjmp .L45
+ 267 0182 C0E1      		ldi r28,lo8(16)
+ 268 0184 00C0      		rjmp .L37
+ 269               	.L45:
+ 141:src/lcdpcf8574.c ****     data = 0;
+ 270               		.loc 1 141 0
+ 271 0186 C0E0      		ldi r28,0
+ 272               	.L37:
+ 273               	.LVL17:
+ 143:src/lcdpcf8574.c ****     if(!pcf8574_getinputpin(LCD_PCF8574_DEVICEID, LCD_DATA1_PIN)) data |= 0x20;
+ 274               		.loc 1 143 0
+ 275 0188 65E0      		ldi r22,lo8(5)
+ 276 018a 80E0      		ldi r24,0
+ 277 018c 0E94 0000 		call pcf8574_getinputpin
+ 278               	.LVL18:
+ 279 0190 8111      		cpse r24,__zero_reg__
+ 280 0192 00C0      		rjmp .L38
+ 281 0194 C062      		ori r28,lo8(32)
+ 282               	.LVL19:
+ 283               	.L38:
+ 144:src/lcdpcf8574.c ****     if(!pcf8574_getinputpin(LCD_PCF8574_DEVICEID, LCD_DATA2_PIN)) data |= 0x40;
+ 284               		.loc 1 144 0
+ 285 0196 66E0      		ldi r22,lo8(6)
+ 286 0198 80E0      		ldi r24,0
+ 287 019a 0E94 0000 		call pcf8574_getinputpin
+ 288               	.LVL20:
+ 289 019e 8111      		cpse r24,__zero_reg__
+ 290 01a0 00C0      		rjmp .L39
+ 291 01a2 C064      		ori r28,lo8(64)
+ 292               	.LVL21:
+ 293               	.L39:
+ 145:src/lcdpcf8574.c ****     if(!pcf8574_getinputpin(LCD_PCF8574_DEVICEID, LCD_DATA3_PIN)) data |= 0x80;
+ 294               		.loc 1 145 0
+ 295 01a4 67E0      		ldi r22,lo8(7)
+ 296 01a6 80E0      		ldi r24,0
+ 297 01a8 0E94 0000 		call pcf8574_getinputpin
+ 298               	.LVL22:
+ 299 01ac 8111      		cpse r24,__zero_reg__
+ 300 01ae 00C0      		rjmp .L40
+ 301 01b0 C068      		ori r28,lo8(-128)
+ 302               	.LVL23:
+ 303               	.L40:
+ 146:src/lcdpcf8574.c **** 	pcf8574_setoutputpinlow(LCD_PCF8574_DEVICEID, LCD_E_PIN);
+ 304               		.loc 1 146 0
+ 305 01b2 62E0      		ldi r22,lo8(2)
+ 306 01b4 80E0      		ldi r24,0
+ 307 01b6 0E94 0000 		call pcf8574_setoutputpinlow
+ 308               	.LVL24:
+ 147:src/lcdpcf8574.c **** 
+ 148:src/lcdpcf8574.c **** 	/* Enable 500ns low */
+ 149:src/lcdpcf8574.c **** 	lcd_e_delay();
+ 309               		.loc 1 149 0
+ 310               	/* #APP */
+ 311               	 ;  149 "src/lcdpcf8574.c" 1
+ 312 01ba 00C0      		rjmp 1f
+ 313               	 1:
+ 314               	 ;  0 "" 2
+ 150:src/lcdpcf8574.c **** 
+ 151:src/lcdpcf8574.c **** 	/* read low nibble */
+ 152:src/lcdpcf8574.c **** 	pcf8574_setoutputpinhigh(LCD_PCF8574_DEVICEID, LCD_E_PIN);
+ 315               		.loc 1 152 0
+ 316               	/* #NOAPP */
+ 317 01bc 62E0      		ldi r22,lo8(2)
+ 318 01be 80E0      		ldi r24,0
+ 319 01c0 0E94 0000 		call pcf8574_setoutputpinhigh
+ 320               	.LVL25:
+ 153:src/lcdpcf8574.c **** 	lcd_e_delay();
+ 321               		.loc 1 153 0
+ 322               	/* #APP */
+ 323               	 ;  153 "src/lcdpcf8574.c" 1
+ 324 01c4 00C0      		rjmp 1f
+ 325               	 1:
+ 326               	 ;  0 "" 2
+ 154:src/lcdpcf8574.c **** 	if(!pcf8574_getinputpin(LCD_PCF8574_DEVICEID, LCD_DATA0_PIN)) data |= 0x01;
+ 327               		.loc 1 154 0
+ 328               	/* #NOAPP */
+ 329 01c6 64E0      		ldi r22,lo8(4)
+ 330 01c8 80E0      		ldi r24,0
+ 331 01ca 0E94 0000 		call pcf8574_getinputpin
+ 332               	.LVL26:
+ 333 01ce 8111      		cpse r24,__zero_reg__
+ 334 01d0 00C0      		rjmp .L41
+ 335 01d2 C160      		ori r28,lo8(1)
+ 336               	.LVL27:
+ 337               	.L41:
+ 155:src/lcdpcf8574.c **** 	if(!pcf8574_getinputpin(LCD_PCF8574_DEVICEID, LCD_DATA1_PIN)) data |= 0x02;
+ 338               		.loc 1 155 0
+ 339 01d4 65E0      		ldi r22,lo8(5)
+ 340 01d6 80E0      		ldi r24,0
+ 341 01d8 0E94 0000 		call pcf8574_getinputpin
+ 342               	.LVL28:
+ 343 01dc 8111      		cpse r24,__zero_reg__
+ 344 01de 00C0      		rjmp .L42
+ 345 01e0 C260      		ori r28,lo8(2)
+ 346               	.LVL29:
+ 347               	.L42:
+ 156:src/lcdpcf8574.c **** 	if(!pcf8574_getinputpin(LCD_PCF8574_DEVICEID, LCD_DATA2_PIN)) data |= 0x04;
+ 348               		.loc 1 156 0
+ 349 01e2 66E0      		ldi r22,lo8(6)
+ 350 01e4 80E0      		ldi r24,0
+ 351 01e6 0E94 0000 		call pcf8574_getinputpin
+ 352               	.LVL30:
+ 353 01ea 8111      		cpse r24,__zero_reg__
+ 354 01ec 00C0      		rjmp .L43
+ 355 01ee C460      		ori r28,lo8(4)
+ 356               	.LVL31:
+ 357               	.L43:
+ 157:src/lcdpcf8574.c **** 	if(!pcf8574_getinputpin(LCD_PCF8574_DEVICEID, LCD_DATA3_PIN)) data |= 0x08;
+ 358               		.loc 1 157 0
+ 359 01f0 67E0      		ldi r22,lo8(7)
+ 360 01f2 80E0      		ldi r24,0
+ 361 01f4 0E94 0000 		call pcf8574_getinputpin
+ 362               	.LVL32:
+ 363 01f8 8111      		cpse r24,__zero_reg__
+ 364 01fa 00C0      		rjmp .L44
+ 365 01fc C860      		ori r28,lo8(8)
+ 366               	.LVL33:
+ 367               	.L44:
+ 158:src/lcdpcf8574.c **** 	pcf8574_setoutputpinlow(LCD_PCF8574_DEVICEID, LCD_E_PIN);
+ 368               		.loc 1 158 0
+ 369 01fe 62E0      		ldi r22,lo8(2)
+ 370 0200 80E0      		ldi r24,0
+ 371 0202 0E94 0000 		call pcf8574_setoutputpinlow
+ 372               	.LVL34:
+ 159:src/lcdpcf8574.c **** 
+ 160:src/lcdpcf8574.c ****     return data;
+ 161:src/lcdpcf8574.c **** }
+ 373               		.loc 1 161 0
+ 374 0206 8C2F      		mov r24,r28
+ 375               	/* epilogue start */
+ 376 0208 CF91      		pop r28
+ 377               	.LVL35:
+ 378 020a 0895      		ret
+ 379               		.cfi_endproc
+ 380               	.LFE20:
+ 383               	lcd_waitbusy:
+ 384               	.LFB5:
+ 162:src/lcdpcf8574.c **** 
+ 163:src/lcdpcf8574.c **** 
+ 164:src/lcdpcf8574.c **** /*************************************************************************
+ 165:src/lcdpcf8574.c **** loops while lcd is busy, returns address counter
+ 166:src/lcdpcf8574.c **** *************************************************************************/
+ 167:src/lcdpcf8574.c **** static uint8_t lcd_waitbusy(void)
+ 168:src/lcdpcf8574.c **** {
+ 385               		.loc 1 168 0
+ 386               		.cfi_startproc
+ 387               	/* prologue: function */
+ 388               	/* frame size = 0 */
+ 389               	/* stack size = 0 */
+ 390               	.L__stack_usage = 0
+ 391               	.L47:
+ 169:src/lcdpcf8574.c ****     register uint8_t c;
+ 170:src/lcdpcf8574.c ****     
+ 171:src/lcdpcf8574.c ****     /* wait until busy flag is cleared */
+ 172:src/lcdpcf8574.c ****     while ( (c=lcd_read(0)) & (1<<LCD_BUSY)) {}
+ 392               		.loc 1 172 0 discriminator 1
+ 393 020c 0E94 0000 		call lcd_read.constprop.0
+ 394               	.LVL36:
+ 395 0210 87FD      		sbrc r24,7
+ 396 0212 00C0      		rjmp .L47
+ 397               	.LVL37:
+ 398               	.LBB14:
+ 399               	.LBB15:
+  45:src/lcdpcf8574.c ****     else
+ 400               		.loc 1 45 0
+ 401               	/* #APP */
+ 402               	 ;  45 "src/lcdpcf8574.c" 1
+ 403 0214 00C0      		rjmp 1f
+ 404               	 1:
+ 405               	 ;  0 "" 2
+ 406               	.LVL38:
+ 407               	/* #NOAPP */
+ 408               	.LBE15:
+ 409               	.LBE14:
+ 173:src/lcdpcf8574.c ****     
+ 174:src/lcdpcf8574.c ****     /* the address counter is updated 4us after the busy flag is cleared */
+ 175:src/lcdpcf8574.c ****     delay(2);
+ 176:src/lcdpcf8574.c **** 
+ 177:src/lcdpcf8574.c ****     /* now read the address counter */
+ 178:src/lcdpcf8574.c ****     return (lcd_read(0));  // return address counter
+ 410               		.loc 1 178 0
+ 411 0216 0C94 0000 		jmp lcd_read.constprop.0
+ 412               	.LVL39:
+ 413               		.cfi_endproc
+ 414               	.LFE5:
+ 416               	.global	lcd_command
+ 418               	lcd_command:
+ 419               	.LFB7:
+ 179:src/lcdpcf8574.c ****     
+ 180:src/lcdpcf8574.c **** }/* lcd_waitbusy */
+ 181:src/lcdpcf8574.c **** 
+ 182:src/lcdpcf8574.c **** 
+ 183:src/lcdpcf8574.c **** /*************************************************************************
+ 184:src/lcdpcf8574.c **** Move cursor to the start of next line or to the first line if the cursor 
+ 185:src/lcdpcf8574.c **** is already on the last line.
+ 186:src/lcdpcf8574.c **** *************************************************************************/
+ 187:src/lcdpcf8574.c **** static inline void lcd_newline(uint8_t pos)
+ 188:src/lcdpcf8574.c **** {
+ 189:src/lcdpcf8574.c ****     register uint8_t addressCounter;
+ 190:src/lcdpcf8574.c **** 
+ 191:src/lcdpcf8574.c **** 
+ 192:src/lcdpcf8574.c **** #if LCD_LINES==1
+ 193:src/lcdpcf8574.c ****     addressCounter = 0;
+ 194:src/lcdpcf8574.c **** #endif
+ 195:src/lcdpcf8574.c **** #if LCD_LINES==2
+ 196:src/lcdpcf8574.c ****     if ( pos < (LCD_START_LINE2) )
+ 197:src/lcdpcf8574.c ****         addressCounter = LCD_START_LINE2;
+ 198:src/lcdpcf8574.c ****     else
+ 199:src/lcdpcf8574.c ****         addressCounter = LCD_START_LINE1;
+ 200:src/lcdpcf8574.c **** #endif
+ 201:src/lcdpcf8574.c **** #if LCD_LINES==4
+ 202:src/lcdpcf8574.c ****     if ( pos < LCD_START_LINE3 )
+ 203:src/lcdpcf8574.c ****         addressCounter = LCD_START_LINE2;
+ 204:src/lcdpcf8574.c ****     else if ( (pos >= LCD_START_LINE2) && (pos < LCD_START_LINE4) )
+ 205:src/lcdpcf8574.c ****         addressCounter = LCD_START_LINE3;
+ 206:src/lcdpcf8574.c ****     else if ( (pos >= LCD_START_LINE3) && (pos < LCD_START_LINE2) )
+ 207:src/lcdpcf8574.c ****         addressCounter = LCD_START_LINE4;
+ 208:src/lcdpcf8574.c ****     else 
+ 209:src/lcdpcf8574.c ****         addressCounter = LCD_START_LINE1;
+ 210:src/lcdpcf8574.c **** #endif
+ 211:src/lcdpcf8574.c ****     lcd_command((1<<LCD_DDRAM)+addressCounter);
+ 212:src/lcdpcf8574.c **** 
+ 213:src/lcdpcf8574.c **** }/* lcd_newline */
+ 214:src/lcdpcf8574.c **** 
+ 215:src/lcdpcf8574.c **** 
+ 216:src/lcdpcf8574.c **** /*
+ 217:src/lcdpcf8574.c **** ** PUBLIC FUNCTIONS 
+ 218:src/lcdpcf8574.c **** */
+ 219:src/lcdpcf8574.c **** 
+ 220:src/lcdpcf8574.c **** /*************************************************************************
+ 221:src/lcdpcf8574.c **** Send LCD controller instruction command
+ 222:src/lcdpcf8574.c **** Input:   instruction to send to LCD controller, see HD44780 data sheet
+ 223:src/lcdpcf8574.c **** Returns: none
+ 224:src/lcdpcf8574.c **** *************************************************************************/
+ 225:src/lcdpcf8574.c **** void lcd_command(uint8_t cmd)
+ 226:src/lcdpcf8574.c **** {
+ 420               		.loc 1 226 0
+ 421               		.cfi_startproc
+ 422               	.LVL40:
+ 423 021a CF93      		push r28
+ 424               	.LCFI2:
+ 425               		.cfi_def_cfa_offset 3
+ 426               		.cfi_offset 28, -2
+ 427               	/* prologue: function */
+ 428               	/* frame size = 0 */
+ 429               	/* stack size = 1 */
+ 430               	.L__stack_usage = 1
+ 431 021c C82F      		mov r28,r24
+ 227:src/lcdpcf8574.c ****     lcd_waitbusy();
+ 432               		.loc 1 227 0
+ 433 021e 0E94 0000 		call lcd_waitbusy
+ 434               	.LVL41:
+ 228:src/lcdpcf8574.c ****     lcd_write(cmd,0);
+ 435               		.loc 1 228 0
+ 436 0222 60E0      		ldi r22,0
+ 437 0224 8C2F      		mov r24,r28
+ 438               	/* epilogue start */
+ 229:src/lcdpcf8574.c **** }
+ 439               		.loc 1 229 0
+ 440 0226 CF91      		pop r28
+ 441               	.LVL42:
+ 228:src/lcdpcf8574.c ****     lcd_write(cmd,0);
+ 442               		.loc 1 228 0
+ 443 0228 0C94 0000 		jmp lcd_write
+ 444               	.LVL43:
+ 445               		.cfi_endproc
+ 446               	.LFE7:
+ 448               	.global	lcd_data
+ 450               	lcd_data:
+ 451               	.LFB8:
+ 230:src/lcdpcf8574.c **** 
+ 231:src/lcdpcf8574.c **** 
+ 232:src/lcdpcf8574.c **** /*************************************************************************
+ 233:src/lcdpcf8574.c **** Send data byte to LCD controller 
+ 234:src/lcdpcf8574.c **** Input:   data to send to LCD controller, see HD44780 data sheet
+ 235:src/lcdpcf8574.c **** Returns: none
+ 236:src/lcdpcf8574.c **** *************************************************************************/
+ 237:src/lcdpcf8574.c **** void lcd_data(uint8_t data)
+ 238:src/lcdpcf8574.c **** {
+ 452               		.loc 1 238 0
+ 453               		.cfi_startproc
+ 454               	.LVL44:
+ 455 022c CF93      		push r28
+ 456               	.LCFI3:
+ 457               		.cfi_def_cfa_offset 3
+ 458               		.cfi_offset 28, -2
+ 459               	/* prologue: function */
+ 460               	/* frame size = 0 */
+ 461               	/* stack size = 1 */
+ 462               	.L__stack_usage = 1
+ 463 022e C82F      		mov r28,r24
+ 239:src/lcdpcf8574.c ****     lcd_waitbusy();
+ 464               		.loc 1 239 0
+ 465 0230 0E94 0000 		call lcd_waitbusy
+ 466               	.LVL45:
+ 240:src/lcdpcf8574.c ****     lcd_write(data,1);
+ 467               		.loc 1 240 0
+ 468 0234 61E0      		ldi r22,lo8(1)
+ 469 0236 8C2F      		mov r24,r28
+ 470               	/* epilogue start */
+ 241:src/lcdpcf8574.c **** }
+ 471               		.loc 1 241 0
+ 472 0238 CF91      		pop r28
+ 473               	.LVL46:
+ 240:src/lcdpcf8574.c ****     lcd_write(data,1);
+ 474               		.loc 1 240 0
+ 475 023a 0C94 0000 		jmp lcd_write
+ 476               	.LVL47:
+ 477               		.cfi_endproc
+ 478               	.LFE8:
+ 480               	.global	lcd_gotoxy
+ 482               	lcd_gotoxy:
+ 483               	.LFB11:
+ 242:src/lcdpcf8574.c **** 
+ 243:src/lcdpcf8574.c **** 
+ 244:src/lcdpcf8574.c **** /*************************************************************************
+ 245:src/lcdpcf8574.c **** Clear CGRAM
+ 246:src/lcdpcf8574.c **** *************************************************************************/
+ 247:src/lcdpcf8574.c **** void lcd_clear_CGRAM() {
+ 248:src/lcdpcf8574.c **** 	register uint8_t addressCounter = 0;
+ 249:src/lcdpcf8574.c **** 	for (; addressCounter < 64; addressCounter++) {
+ 250:src/lcdpcf8574.c **** 		lcd_command((1 << LCD_CGRAM) + addressCounter);
+ 251:src/lcdpcf8574.c **** 		lcd_putc(0x00);
+ 252:src/lcdpcf8574.c **** 	}
+ 253:src/lcdpcf8574.c **** }
+ 254:src/lcdpcf8574.c **** 
+ 255:src/lcdpcf8574.c **** 
+ 256:src/lcdpcf8574.c **** /*************************************************************************
+ 257:src/lcdpcf8574.c **** Define custom character in CGRAM
+ 258:src/lcdpcf8574.c **** Inputs: charnum: Character position in CGRAM. You can define maximum 8 chars.
+ 259:src/lcdpcf8574.c **** values[]: Custom character descriptor pointer.
+ 260:src/lcdpcf8574.c **** Returns: 0 - The custom character successfully created
+ 261:src/lcdpcf8574.c **** 1 - If the charnum greater than 7. You can define maximum 8 chars.
+ 262:src/lcdpcf8574.c **** *************************************************************************/
+ 263:src/lcdpcf8574.c **** uint8_t lcd_create_custom_char(uint8_t charnum, const uint8_t * values) {
+ 264:src/lcdpcf8574.c **** 	register uint8_t j = 0;
+ 265:src/lcdpcf8574.c **** 	const uint8_t *p = values;
+ 266:src/lcdpcf8574.c **** 
+ 267:src/lcdpcf8574.c **** 	if (charnum > 7) {
+ 268:src/lcdpcf8574.c **** 		return 1;
+ 269:src/lcdpcf8574.c **** 	}
+ 270:src/lcdpcf8574.c **** 	lcd_command((1 << LCD_CGRAM) + charnum * 8); // set CGRAM address charnum * 8 byte
+ 271:src/lcdpcf8574.c **** 	for (; j < 8; j++) {
+ 272:src/lcdpcf8574.c **** 		lcd_putc (*(p + j)); // write 8 byte data (one character) to CGRAM
+ 273:src/lcdpcf8574.c **** 	}
+ 274:src/lcdpcf8574.c **** 	return (0);
+ 275:src/lcdpcf8574.c **** }
+ 276:src/lcdpcf8574.c **** 
+ 277:src/lcdpcf8574.c **** 
+ 278:src/lcdpcf8574.c **** /*************************************************************************
+ 279:src/lcdpcf8574.c **** Set cursor to specified position
+ 280:src/lcdpcf8574.c **** Input:    x  horizontal position  (0: left most position)
+ 281:src/lcdpcf8574.c ****           y  vertical position    (0: first line)
+ 282:src/lcdpcf8574.c **** Returns:  none
+ 283:src/lcdpcf8574.c **** *************************************************************************/
+ 284:src/lcdpcf8574.c **** void lcd_gotoxy(uint8_t x, uint8_t y)
+ 285:src/lcdpcf8574.c **** {
+ 484               		.loc 1 285 0
+ 485               		.cfi_startproc
+ 486               	.LVL48:
+ 487               	/* prologue: function */
+ 488               	/* frame size = 0 */
+ 489               	/* stack size = 0 */
+ 490               	.L__stack_usage = 0
+ 286:src/lcdpcf8574.c **** #if LCD_LINES==1
+ 287:src/lcdpcf8574.c ****     lcd_command((1<<LCD_DDRAM)+LCD_START_LINE1+x);
+ 288:src/lcdpcf8574.c **** #endif
+ 289:src/lcdpcf8574.c **** #if LCD_LINES==2
+ 290:src/lcdpcf8574.c ****     if ( y==0 ) 
+ 491               		.loc 1 290 0
+ 492 023e 6111      		cpse r22,__zero_reg__
+ 493 0240 00C0      		rjmp .L52
+ 291:src/lcdpcf8574.c ****         lcd_command((1<<LCD_DDRAM)+LCD_START_LINE1+x);
+ 494               		.loc 1 291 0
+ 495 0242 8058      		subi r24,lo8(-(-128))
+ 496               	.LVL49:
+ 497 0244 00C0      		rjmp .L53
+ 498               	.LVL50:
+ 499               	.L52:
+ 292:src/lcdpcf8574.c ****     else
+ 293:src/lcdpcf8574.c ****         lcd_command((1<<LCD_DDRAM)+LCD_START_LINE2+x);
+ 500               		.loc 1 293 0
+ 501 0246 8054      		subi r24,lo8(-(-64))
+ 502               	.LVL51:
+ 503               	.L53:
+ 504 0248 0C94 0000 		jmp lcd_command
+ 505               	.LVL52:
+ 506               		.cfi_endproc
+ 507               	.LFE11:
+ 509               	.global	lcd_getxy
+ 511               	lcd_getxy:
+ 512               	.LFB12:
+ 294:src/lcdpcf8574.c **** #endif
+ 295:src/lcdpcf8574.c **** #if LCD_LINES==4
+ 296:src/lcdpcf8574.c ****     if ( y==0 )
+ 297:src/lcdpcf8574.c ****         lcd_command((1<<LCD_DDRAM)+LCD_START_LINE1+x);
+ 298:src/lcdpcf8574.c ****     else if ( y==1)
+ 299:src/lcdpcf8574.c ****         lcd_command((1<<LCD_DDRAM)+LCD_START_LINE2+x);
+ 300:src/lcdpcf8574.c ****     else if ( y==2)
+ 301:src/lcdpcf8574.c ****         lcd_command((1<<LCD_DDRAM)+LCD_START_LINE3+x);
+ 302:src/lcdpcf8574.c ****     else /* y==3 */
+ 303:src/lcdpcf8574.c ****         lcd_command((1<<LCD_DDRAM)+LCD_START_LINE4+x);
+ 304:src/lcdpcf8574.c **** #endif
+ 305:src/lcdpcf8574.c **** 
+ 306:src/lcdpcf8574.c **** }/* lcd_gotoxy */
+ 307:src/lcdpcf8574.c **** 
+ 308:src/lcdpcf8574.c **** 
+ 309:src/lcdpcf8574.c **** /*************************************************************************
+ 310:src/lcdpcf8574.c **** *************************************************************************/
+ 311:src/lcdpcf8574.c **** int lcd_getxy(void)
+ 312:src/lcdpcf8574.c **** {
+ 513               		.loc 1 312 0
+ 514               		.cfi_startproc
+ 515               	/* prologue: function */
+ 516               	/* frame size = 0 */
+ 517               	/* stack size = 0 */
+ 518               	.L__stack_usage = 0
+ 313:src/lcdpcf8574.c ****     return lcd_waitbusy();
+ 519               		.loc 1 313 0
+ 520 024c 0E94 0000 		call lcd_waitbusy
+ 521               	.LVL53:
+ 314:src/lcdpcf8574.c **** }
+ 522               		.loc 1 314 0
+ 523 0250 90E0      		ldi r25,0
+ 524 0252 0895      		ret
+ 525               		.cfi_endproc
+ 526               	.LFE12:
+ 528               	.global	lcd_clrscr
+ 530               	lcd_clrscr:
+ 531               	.LFB13:
+ 315:src/lcdpcf8574.c **** 
+ 316:src/lcdpcf8574.c **** 
+ 317:src/lcdpcf8574.c **** /*************************************************************************
+ 318:src/lcdpcf8574.c **** Clear display and set cursor to home position
+ 319:src/lcdpcf8574.c **** *************************************************************************/
+ 320:src/lcdpcf8574.c **** void lcd_clrscr(void)
+ 321:src/lcdpcf8574.c **** {
+ 532               		.loc 1 321 0
+ 533               		.cfi_startproc
+ 534               	/* prologue: function */
+ 535               	/* frame size = 0 */
+ 536               	/* stack size = 0 */
+ 537               	.L__stack_usage = 0
+ 322:src/lcdpcf8574.c ****     lcd_command(1<<LCD_CLR);
+ 538               		.loc 1 322 0
+ 539 0254 81E0      		ldi r24,lo8(1)
+ 540 0256 0C94 0000 		jmp lcd_command
+ 541               	.LVL54:
+ 542               		.cfi_endproc
+ 543               	.LFE13:
+ 545               	.global	lcd_led
+ 547               	lcd_led:
+ 548               	.LFB14:
+ 323:src/lcdpcf8574.c **** }
+ 324:src/lcdpcf8574.c **** 
+ 325:src/lcdpcf8574.c **** 
+ 326:src/lcdpcf8574.c **** /*************************************************************************
+ 327:src/lcdpcf8574.c **** Set illumination pin
+ 328:src/lcdpcf8574.c **** *************************************************************************/
+ 329:src/lcdpcf8574.c **** void lcd_led(uint8_t onoff)
+ 330:src/lcdpcf8574.c **** {
+ 549               		.loc 1 330 0
+ 550               		.cfi_startproc
+ 551               	.LVL55:
+ 552               	/* prologue: function */
+ 553               	/* frame size = 0 */
+ 554               	/* stack size = 0 */
+ 555               	.L__stack_usage = 0
+ 331:src/lcdpcf8574.c **** 	if(onoff)
+ 556               		.loc 1 331 0
+ 557 025a 8823      		tst r24
+ 558 025c 01F0      		breq .L57
+ 332:src/lcdpcf8574.c **** 		dataport &= ~_BV(LCD_LED_PIN);
+ 559               		.loc 1 332 0
+ 560 025e 8091 0000 		lds r24,dataport
+ 561               	.LVL56:
+ 562 0262 877F      		andi r24,lo8(-9)
+ 563 0264 00C0      		rjmp .L59
+ 564               	.LVL57:
+ 565               	.L57:
+ 333:src/lcdpcf8574.c **** 	else
+ 334:src/lcdpcf8574.c **** 		dataport |= _BV(LCD_LED_PIN);
+ 566               		.loc 1 334 0
+ 567 0266 8091 0000 		lds r24,dataport
+ 568               	.LVL58:
+ 569 026a 8860      		ori r24,lo8(8)
+ 570               	.L59:
+ 571 026c 8093 0000 		sts dataport,r24
+ 335:src/lcdpcf8574.c **** 	pcf8574_setoutput(LCD_PCF8574_DEVICEID, dataport);
+ 572               		.loc 1 335 0
+ 573 0270 6091 0000 		lds r22,dataport
+ 574 0274 80E0      		ldi r24,0
+ 575 0276 0C94 0000 		jmp pcf8574_setoutput
+ 576               	.LVL59:
+ 577               		.cfi_endproc
+ 578               	.LFE14:
+ 580               	.global	lcd_home
+ 582               	lcd_home:
+ 583               	.LFB15:
+ 336:src/lcdpcf8574.c **** }
+ 337:src/lcdpcf8574.c **** 
+ 338:src/lcdpcf8574.c **** 
+ 339:src/lcdpcf8574.c **** /*************************************************************************
+ 340:src/lcdpcf8574.c **** Set cursor to home position
+ 341:src/lcdpcf8574.c **** *************************************************************************/
+ 342:src/lcdpcf8574.c **** void lcd_home(void)
+ 343:src/lcdpcf8574.c **** {
+ 584               		.loc 1 343 0
+ 585               		.cfi_startproc
+ 586               	/* prologue: function */
+ 587               	/* frame size = 0 */
+ 588               	/* stack size = 0 */
+ 589               	.L__stack_usage = 0
+ 344:src/lcdpcf8574.c ****     lcd_command(1<<LCD_HOME);
+ 590               		.loc 1 344 0
+ 591 027a 82E0      		ldi r24,lo8(2)
+ 592 027c 0C94 0000 		jmp lcd_command
+ 593               	.LVL60:
+ 594               		.cfi_endproc
+ 595               	.LFE15:
+ 597               	.global	lcd_putc
+ 599               	lcd_putc:
+ 600               	.LFB16:
+ 345:src/lcdpcf8574.c **** }
+ 346:src/lcdpcf8574.c **** 
+ 347:src/lcdpcf8574.c **** 
+ 348:src/lcdpcf8574.c **** /*************************************************************************
+ 349:src/lcdpcf8574.c **** Display character at current cursor position 
+ 350:src/lcdpcf8574.c **** Input:    character to be displayed                                       
+ 351:src/lcdpcf8574.c **** Returns:  none
+ 352:src/lcdpcf8574.c **** *************************************************************************/
+ 353:src/lcdpcf8574.c **** void lcd_putc(char c)
+ 354:src/lcdpcf8574.c **** {
+ 601               		.loc 1 354 0
+ 602               		.cfi_startproc
+ 603               	.LVL61:
+ 604 0280 CF93      		push r28
+ 605               	.LCFI4:
+ 606               		.cfi_def_cfa_offset 3
+ 607               		.cfi_offset 28, -2
+ 608               	/* prologue: function */
+ 609               	/* frame size = 0 */
+ 610               	/* stack size = 1 */
+ 611               	.L__stack_usage = 1
+ 612 0282 C82F      		mov r28,r24
+ 355:src/lcdpcf8574.c ****     uint8_t pos;
+ 356:src/lcdpcf8574.c **** 
+ 357:src/lcdpcf8574.c ****     pos = lcd_waitbusy();   // read busy-flag and address counter
+ 613               		.loc 1 357 0
+ 614 0284 0E94 0000 		call lcd_waitbusy
+ 615               	.LVL62:
+ 358:src/lcdpcf8574.c ****     if (c=='\n')
+ 616               		.loc 1 358 0
+ 617 0288 CA30      		cpi r28,lo8(10)
+ 618 028a 01F4      		brne .L62
+ 619               	.LVL63:
+ 620               	.LBB18:
+ 621               	.LBB19:
+ 196:src/lcdpcf8574.c ****         addressCounter = LCD_START_LINE2;
+ 622               		.loc 1 196 0
+ 623 028c 8034      		cpi r24,lo8(64)
+ 624 028e 00F0      		brlo .L66
+ 199:src/lcdpcf8574.c **** #endif
+ 625               		.loc 1 199 0
+ 626 0290 80E0      		ldi r24,0
+ 627               	.LVL64:
+ 628 0292 00C0      		rjmp .L63
+ 629               	.LVL65:
+ 630               	.L66:
+ 197:src/lcdpcf8574.c ****     else
+ 631               		.loc 1 197 0
+ 632 0294 80E4      		ldi r24,lo8(64)
+ 633               	.LVL66:
+ 634               	.L63:
+ 211:src/lcdpcf8574.c **** 
+ 635               		.loc 1 211 0
+ 636 0296 8058      		subi r24,lo8(-(-128))
+ 637               	.LVL67:
+ 638               	/* epilogue start */
+ 639               	.LBE19:
+ 640               	.LBE18:
+ 359:src/lcdpcf8574.c ****     {
+ 360:src/lcdpcf8574.c ****         lcd_newline(pos);
+ 361:src/lcdpcf8574.c ****     }
+ 362:src/lcdpcf8574.c ****     else
+ 363:src/lcdpcf8574.c ****     {
+ 364:src/lcdpcf8574.c **** #if LCD_WRAP_LINES==1
+ 365:src/lcdpcf8574.c **** #if LCD_LINES==1
+ 366:src/lcdpcf8574.c ****         if ( pos == LCD_START_LINE1+LCD_DISP_LENGTH ) {
+ 367:src/lcdpcf8574.c ****             lcd_write((1<<LCD_DDRAM)+LCD_START_LINE1,0);
+ 368:src/lcdpcf8574.c ****         }
+ 369:src/lcdpcf8574.c **** #elif LCD_LINES==2
+ 370:src/lcdpcf8574.c ****         if ( pos == LCD_START_LINE1+LCD_DISP_LENGTH ) {
+ 371:src/lcdpcf8574.c ****             lcd_write((1<<LCD_DDRAM)+LCD_START_LINE2,0);    
+ 372:src/lcdpcf8574.c ****         }else if ( pos == LCD_START_LINE2+LCD_DISP_LENGTH ){
+ 373:src/lcdpcf8574.c ****             lcd_write((1<<LCD_DDRAM)+LCD_START_LINE1,0);
+ 374:src/lcdpcf8574.c ****         }
+ 375:src/lcdpcf8574.c **** #elif LCD_LINES==4
+ 376:src/lcdpcf8574.c ****         if ( pos == LCD_START_LINE1+LCD_DISP_LENGTH ) {
+ 377:src/lcdpcf8574.c ****             lcd_write((1<<LCD_DDRAM)+LCD_START_LINE2,0);    
+ 378:src/lcdpcf8574.c ****         }else if ( pos == LCD_START_LINE2+LCD_DISP_LENGTH ) {
+ 379:src/lcdpcf8574.c ****             lcd_write((1<<LCD_DDRAM)+LCD_START_LINE3,0);
+ 380:src/lcdpcf8574.c ****         }else if ( pos == LCD_START_LINE3+LCD_DISP_LENGTH ) {
+ 381:src/lcdpcf8574.c ****             lcd_write((1<<LCD_DDRAM)+LCD_START_LINE4,0);
+ 382:src/lcdpcf8574.c ****         }else if ( pos == LCD_START_LINE4+LCD_DISP_LENGTH ) {
+ 383:src/lcdpcf8574.c ****             lcd_write((1<<LCD_DDRAM)+LCD_START_LINE1,0);
+ 384:src/lcdpcf8574.c ****         }
+ 385:src/lcdpcf8574.c **** #endif
+ 386:src/lcdpcf8574.c ****         lcd_waitbusy();
+ 387:src/lcdpcf8574.c **** #endif
+ 388:src/lcdpcf8574.c ****         lcd_write(c, 1);
+ 389:src/lcdpcf8574.c ****     }
+ 390:src/lcdpcf8574.c **** 
+ 391:src/lcdpcf8574.c **** }/* lcd_putc */
+ 641               		.loc 1 391 0
+ 642 0298 CF91      		pop r28
+ 643               	.LVL68:
+ 644               	.LBB21:
+ 645               	.LBB20:
+ 211:src/lcdpcf8574.c **** 
+ 646               		.loc 1 211 0
+ 647 029a 0C94 0000 		jmp lcd_command
+ 648               	.LVL69:
+ 649               	.L62:
+ 650               	.LBE20:
+ 651               	.LBE21:
+ 370:src/lcdpcf8574.c ****             lcd_write((1<<LCD_DDRAM)+LCD_START_LINE2,0);    
+ 652               		.loc 1 370 0
+ 653 029e 8031      		cpi r24,lo8(16)
+ 654 02a0 01F4      		brne .L64
+ 371:src/lcdpcf8574.c ****         }else if ( pos == LCD_START_LINE2+LCD_DISP_LENGTH ){
+ 655               		.loc 1 371 0
+ 656 02a2 60E0      		ldi r22,0
+ 657 02a4 80EC      		ldi r24,lo8(-64)
+ 658               	.LVL70:
+ 659 02a6 00C0      		rjmp .L67
+ 660               	.LVL71:
+ 661               	.L64:
+ 372:src/lcdpcf8574.c ****             lcd_write((1<<LCD_DDRAM)+LCD_START_LINE1,0);
+ 662               		.loc 1 372 0
+ 663 02a8 8035      		cpi r24,lo8(80)
+ 664 02aa 01F4      		brne .L65
+ 373:src/lcdpcf8574.c ****         }
+ 665               		.loc 1 373 0
+ 666 02ac 60E0      		ldi r22,0
+ 667 02ae 80E8      		ldi r24,lo8(-128)
+ 668               	.LVL72:
+ 669               	.L67:
+ 670 02b0 0E94 0000 		call lcd_write
+ 671               	.LVL73:
+ 672               	.L65:
+ 386:src/lcdpcf8574.c **** #endif
+ 673               		.loc 1 386 0
+ 674 02b4 0E94 0000 		call lcd_waitbusy
+ 675               	.LVL74:
+ 388:src/lcdpcf8574.c ****     }
+ 676               		.loc 1 388 0
+ 677 02b8 61E0      		ldi r22,lo8(1)
+ 678 02ba 8C2F      		mov r24,r28
+ 679               	/* epilogue start */
+ 680               		.loc 1 391 0
+ 681 02bc CF91      		pop r28
+ 682               	.LVL75:
+ 388:src/lcdpcf8574.c ****     }
+ 683               		.loc 1 388 0
+ 684 02be 0C94 0000 		jmp lcd_write
+ 685               	.LVL76:
+ 686               		.cfi_endproc
+ 687               	.LFE16:
+ 689               	.global	lcd_clear_CGRAM
+ 691               	lcd_clear_CGRAM:
+ 692               	.LFB9:
+ 247:src/lcdpcf8574.c **** 	register uint8_t addressCounter = 0;
+ 693               		.loc 1 247 0
+ 694               		.cfi_startproc
+ 695 02c2 CF93      		push r28
+ 696               	.LCFI5:
+ 697               		.cfi_def_cfa_offset 3
+ 698               		.cfi_offset 28, -2
+ 699               	/* prologue: function */
+ 700               	/* frame size = 0 */
+ 701               	/* stack size = 1 */
+ 702               	.L__stack_usage = 1
+ 703               	.LVL77:
+ 247:src/lcdpcf8574.c **** 	register uint8_t addressCounter = 0;
+ 704               		.loc 1 247 0
+ 705 02c4 C0E4      		ldi r28,lo8(64)
+ 706               	.LVL78:
+ 707               	.L69:
+ 250:src/lcdpcf8574.c **** 		lcd_putc(0x00);
+ 708               		.loc 1 250 0 discriminator 2
+ 709 02c6 8C2F      		mov r24,r28
+ 710 02c8 0E94 0000 		call lcd_command
+ 711               	.LVL79:
+ 251:src/lcdpcf8574.c **** 	}
+ 712               		.loc 1 251 0 discriminator 2
+ 713 02cc 80E0      		ldi r24,0
+ 714 02ce 0E94 0000 		call lcd_putc
+ 715               	.LVL80:
+ 716 02d2 CF5F      		subi r28,lo8(-(1))
+ 717               	.LVL81:
+ 249:src/lcdpcf8574.c **** 		lcd_command((1 << LCD_CGRAM) + addressCounter);
+ 718               		.loc 1 249 0 discriminator 2
+ 719 02d4 C038      		cpi r28,lo8(-128)
+ 720 02d6 01F4      		brne .L69
+ 721               	/* epilogue start */
+ 253:src/lcdpcf8574.c **** 
+ 722               		.loc 1 253 0
+ 723 02d8 CF91      		pop r28
+ 724               	.LVL82:
+ 725 02da 0895      		ret
+ 726               		.cfi_endproc
+ 727               	.LFE9:
+ 729               	.global	lcd_create_custom_char
+ 731               	lcd_create_custom_char:
+ 732               	.LFB10:
+ 263:src/lcdpcf8574.c **** 	register uint8_t j = 0;
+ 733               		.loc 1 263 0
+ 734               		.cfi_startproc
+ 735               	.LVL83:
+ 736 02dc 0F93      		push r16
+ 737               	.LCFI6:
+ 738               		.cfi_def_cfa_offset 3
+ 739               		.cfi_offset 16, -2
+ 740 02de 1F93      		push r17
+ 741               	.LCFI7:
+ 742               		.cfi_def_cfa_offset 4
+ 743               		.cfi_offset 17, -3
+ 744 02e0 CF93      		push r28
+ 745               	.LCFI8:
+ 746               		.cfi_def_cfa_offset 5
+ 747               		.cfi_offset 28, -4
+ 748 02e2 DF93      		push r29
+ 749               	.LCFI9:
+ 750               		.cfi_def_cfa_offset 6
+ 751               		.cfi_offset 29, -5
+ 752               	/* prologue: function */
+ 753               	/* frame size = 0 */
+ 754               	/* stack size = 4 */
+ 755               	.L__stack_usage = 4
+ 756               	.LVL84:
+ 267:src/lcdpcf8574.c **** 		return 1;
+ 757               		.loc 1 267 0
+ 758 02e4 8830      		cpi r24,lo8(8)
+ 759 02e6 00F4      		brsh .L74
+ 760 02e8 8B01      		movw r16,r22
+ 270:src/lcdpcf8574.c **** 	for (; j < 8; j++) {
+ 761               		.loc 1 270 0
+ 762 02ea 880F      		lsl r24
+ 763 02ec 880F      		lsl r24
+ 764 02ee 880F      		lsl r24
+ 765               	.LVL85:
+ 766 02f0 805C      		subi r24,lo8(-(64))
+ 767 02f2 0E94 0000 		call lcd_command
+ 768               	.LVL86:
+ 769 02f6 E801      		movw r28,r16
+ 770 02f8 085F      		subi r16,-8
+ 771 02fa 1F4F      		sbci r17,-1
+ 772               	.LVL87:
+ 773               	.L73:
+ 272:src/lcdpcf8574.c **** 	}
+ 774               		.loc 1 272 0 discriminator 2
+ 775 02fc 8991      		ld r24,Y+
+ 776               	.LVL88:
+ 777 02fe 0E94 0000 		call lcd_putc
+ 778               	.LVL89:
+ 271:src/lcdpcf8574.c **** 		lcd_putc (*(p + j)); // write 8 byte data (one character) to CGRAM
+ 779               		.loc 1 271 0 discriminator 2
+ 780 0302 C017      		cp r28,r16
+ 781 0304 D107      		cpc r29,r17
+ 782 0306 01F4      		brne .L73
+ 274:src/lcdpcf8574.c **** }
+ 783               		.loc 1 274 0
+ 784 0308 80E0      		ldi r24,0
+ 785 030a 00C0      		rjmp .L72
+ 786               	.LVL90:
+ 787               	.L74:
+ 268:src/lcdpcf8574.c **** 	}
+ 788               		.loc 1 268 0
+ 789 030c 81E0      		ldi r24,lo8(1)
+ 790               	.LVL91:
+ 791               	.L72:
+ 792               	/* epilogue start */
+ 275:src/lcdpcf8574.c **** 
+ 793               		.loc 1 275 0
+ 794 030e DF91      		pop r29
+ 795 0310 CF91      		pop r28
+ 796 0312 1F91      		pop r17
+ 797 0314 0F91      		pop r16
+ 798 0316 0895      		ret
+ 799               		.cfi_endproc
+ 800               	.LFE10:
+ 802               	.global	lcd_puts
+ 804               	lcd_puts:
+ 805               	.LFB17:
+ 392:src/lcdpcf8574.c **** 
+ 393:src/lcdpcf8574.c **** 
+ 394:src/lcdpcf8574.c **** /*************************************************************************
+ 395:src/lcdpcf8574.c **** Display string without auto linefeed 
+ 396:src/lcdpcf8574.c **** Input:    string to be displayed
+ 397:src/lcdpcf8574.c **** Returns:  none
+ 398:src/lcdpcf8574.c **** *************************************************************************/
+ 399:src/lcdpcf8574.c **** void lcd_puts(const char *s)
+ 400:src/lcdpcf8574.c **** /* print string on lcd (no auto linefeed) */
+ 401:src/lcdpcf8574.c **** {
+ 806               		.loc 1 401 0
+ 807               		.cfi_startproc
+ 808               	.LVL92:
+ 809 0318 CF93      		push r28
+ 810               	.LCFI10:
+ 811               		.cfi_def_cfa_offset 3
+ 812               		.cfi_offset 28, -2
+ 813 031a DF93      		push r29
+ 814               	.LCFI11:
+ 815               		.cfi_def_cfa_offset 4
+ 816               		.cfi_offset 29, -3
+ 817               	/* prologue: function */
+ 818               	/* frame size = 0 */
+ 819               	/* stack size = 2 */
+ 820               	.L__stack_usage = 2
+ 821 031c EC01      		movw r28,r24
+ 822               	.LVL93:
+ 823               	.L77:
+ 402:src/lcdpcf8574.c ****     register char c;
+ 403:src/lcdpcf8574.c **** 
+ 404:src/lcdpcf8574.c ****     while ( (c = *s++) ) {
+ 824               		.loc 1 404 0
+ 825 031e 8991      		ld r24,Y+
+ 826               	.LVL94:
+ 827 0320 8823      		tst r24
+ 828 0322 01F0      		breq .L79
+ 405:src/lcdpcf8574.c ****         lcd_putc(c);
+ 829               		.loc 1 405 0
+ 830 0324 0E94 0000 		call lcd_putc
+ 831               	.LVL95:
+ 832 0328 00C0      		rjmp .L77
+ 833               	.LVL96:
+ 834               	.L79:
+ 835               	/* epilogue start */
+ 406:src/lcdpcf8574.c ****     }
+ 407:src/lcdpcf8574.c **** 
+ 408:src/lcdpcf8574.c **** }/* lcd_puts */
+ 836               		.loc 1 408 0
+ 837 032a DF91      		pop r29
+ 838 032c CF91      		pop r28
+ 839               	.LVL97:
+ 840 032e 0895      		ret
+ 841               		.cfi_endproc
+ 842               	.LFE17:
+ 844               	.global	lcd_puts_p
+ 846               	lcd_puts_p:
+ 847               	.LFB18:
+ 409:src/lcdpcf8574.c **** 
+ 410:src/lcdpcf8574.c **** 
+ 411:src/lcdpcf8574.c **** /*************************************************************************
+ 412:src/lcdpcf8574.c **** Display string from program memory without auto linefeed 
+ 413:src/lcdpcf8574.c **** Input:     string from program memory be be displayed                                        
+ 414:src/lcdpcf8574.c **** Returns:   none
+ 415:src/lcdpcf8574.c **** *************************************************************************/
+ 416:src/lcdpcf8574.c **** void lcd_puts_p(const char *progmem_s)
+ 417:src/lcdpcf8574.c **** /* print string from program memory on lcd (no auto linefeed) */
+ 418:src/lcdpcf8574.c **** {
+ 848               		.loc 1 418 0
+ 849               		.cfi_startproc
+ 850               	.LVL98:
+ 851 0330 CF93      		push r28
+ 852               	.LCFI12:
+ 853               		.cfi_def_cfa_offset 3
+ 854               		.cfi_offset 28, -2
+ 855 0332 DF93      		push r29
+ 856               	.LCFI13:
+ 857               		.cfi_def_cfa_offset 4
+ 858               		.cfi_offset 29, -3
+ 859               	/* prologue: function */
+ 860               	/* frame size = 0 */
+ 861               	/* stack size = 2 */
+ 862               	.L__stack_usage = 2
+ 863 0334 FC01      		movw r30,r24
+ 864               	.LVL99:
+ 865               	.L81:
+ 866               	.LBB22:
+ 419:src/lcdpcf8574.c ****     register char c;
+ 420:src/lcdpcf8574.c **** 
+ 421:src/lcdpcf8574.c ****     while ( (c = pgm_read_byte(progmem_s++)) ) {
+ 867               		.loc 1 421 0
+ 868               	/* #APP */
+ 869               	 ;  421 "src/lcdpcf8574.c" 1
+ 870 0336 8491      		lpm r24, Z
+ 871               		
+ 872               	 ;  0 "" 2
+ 873               	.LVL100:
+ 874               	/* #NOAPP */
+ 875 0338 EF01      		movw r28,r30
+ 876 033a 2196      		adiw r28,1
+ 877               	.LVL101:
+ 878               	.LBE22:
+ 879 033c 8823      		tst r24
+ 880 033e 01F0      		breq .L83
+ 422:src/lcdpcf8574.c ****         lcd_putc(c);
+ 881               		.loc 1 422 0
+ 882 0340 0E94 0000 		call lcd_putc
+ 883               	.LVL102:
+ 884 0344 FE01      		movw r30,r28
+ 885 0346 00C0      		rjmp .L81
+ 886               	.LVL103:
+ 887               	.L83:
+ 888               	/* epilogue start */
+ 423:src/lcdpcf8574.c ****     }
+ 424:src/lcdpcf8574.c **** 
+ 425:src/lcdpcf8574.c **** }/* lcd_puts_p */
+ 889               		.loc 1 425 0
+ 890 0348 DF91      		pop r29
+ 891 034a CF91      		pop r28
+ 892               	.LVL104:
+ 893 034c 0895      		ret
+ 894               		.cfi_endproc
+ 895               	.LFE18:
+ 897               	.global	lcd_init
+ 899               	lcd_init:
+ 900               	.LFB19:
+ 426:src/lcdpcf8574.c **** 
+ 427:src/lcdpcf8574.c **** 
+ 428:src/lcdpcf8574.c **** /*************************************************************************
+ 429:src/lcdpcf8574.c **** Initialize display and select type of cursor 
+ 430:src/lcdpcf8574.c **** Input:    dispAttr LCD_DISP_OFF            display off
+ 431:src/lcdpcf8574.c ****                    LCD_DISP_ON             display on, cursor off
+ 432:src/lcdpcf8574.c ****                    LCD_DISP_ON_CURSOR      display on, cursor on
+ 433:src/lcdpcf8574.c ****                    LCD_DISP_CURSOR_BLINK   display on, cursor on flashing
+ 434:src/lcdpcf8574.c **** Returns:  none
+ 435:src/lcdpcf8574.c **** *************************************************************************/
+ 436:src/lcdpcf8574.c **** void lcd_init(uint8_t dispAttr)
+ 437:src/lcdpcf8574.c **** {
+ 901               		.loc 1 437 0
+ 902               		.cfi_startproc
+ 903               	.LVL105:
+ 904 034e 1F93      		push r17
+ 905               	.LCFI14:
+ 906               		.cfi_def_cfa_offset 3
+ 907               		.cfi_offset 17, -2
+ 908 0350 CF93      		push r28
+ 909               	.LCFI15:
+ 910               		.cfi_def_cfa_offset 4
+ 911               		.cfi_offset 28, -3
+ 912 0352 DF93      		push r29
+ 913               	.LCFI16:
+ 914               		.cfi_def_cfa_offset 5
+ 915               		.cfi_offset 29, -4
+ 916               	/* prologue: function */
+ 917               	/* frame size = 0 */
+ 918               	/* stack size = 3 */
+ 919               	.L__stack_usage = 3
+ 920 0354 182F      		mov r17,r24
+ 438:src/lcdpcf8574.c **** 	#if LCD_PCF8574_INIT == 1
+ 439:src/lcdpcf8574.c **** 	//init pcf8574
+ 440:src/lcdpcf8574.c **** 	pcf8574_init();
+ 921               		.loc 1 440 0
+ 922 0356 0E94 0000 		call pcf8574_init
+ 923               	.LVL106:
+ 441:src/lcdpcf8574.c **** 	#endif
+ 442:src/lcdpcf8574.c **** 
+ 443:src/lcdpcf8574.c **** 	dataport = 0;
+ 924               		.loc 1 443 0
+ 925 035a 1092 0000 		sts dataport,__zero_reg__
+ 444:src/lcdpcf8574.c **** 	pcf8574_setoutput(LCD_PCF8574_DEVICEID, dataport);
+ 926               		.loc 1 444 0
+ 927 035e 6091 0000 		lds r22,dataport
+ 928 0362 80E0      		ldi r24,0
+ 929 0364 0E94 0000 		call pcf8574_setoutput
+ 930               	.LVL107:
+ 931               	.LBB23:
+ 932               	.LBB24:
+  47:src/lcdpcf8574.c ****     	    "1: sbiw %0,1" "\n\t"                  
+ 933               		.loc 1 47 0
+ 934 0368 80EA      		ldi r24,lo8(-96)
+ 935 036a 9FE0      		ldi r25,lo8(15)
+ 936               	/* #APP */
+ 937               	 ;  47 "src/lcdpcf8574.c" 1
+ 938 036c 0197      		1: sbiw r24,1
+ 939 036e 01F4      		brne 1b
+ 940               	 ;  0 "" 2
+ 941               	.LVL108:
+ 942               	/* #NOAPP */
+ 943               	.LBE24:
+ 944               	.LBE23:
+ 445:src/lcdpcf8574.c **** 
+ 446:src/lcdpcf8574.c **** 	delay(16000);        /* wait 16ms or more after power-on       */
+ 447:src/lcdpcf8574.c **** 
+ 448:src/lcdpcf8574.c ****     /* initial write to lcd is 8bit */
+ 449:src/lcdpcf8574.c ****     dataport |= _BV(LCD_DATA1_PIN);  // _BV(LCD_FUNCTION)>>4;
+ 945               		.loc 1 449 0
+ 946 0370 8091 0000 		lds r24,dataport
+ 947 0374 8062      		ori r24,lo8(32)
+ 948 0376 8093 0000 		sts dataport,r24
+ 450:src/lcdpcf8574.c ****     dataport |= _BV(LCD_DATA0_PIN);  // _BV(LCD_FUNCTION_8BIT)>>4;
+ 949               		.loc 1 450 0
+ 950 037a 8091 0000 		lds r24,dataport
+ 951 037e 8061      		ori r24,lo8(16)
+ 952 0380 8093 0000 		sts dataport,r24
+ 451:src/lcdpcf8574.c ****     pcf8574_setoutput(LCD_PCF8574_DEVICEID, dataport);
+ 953               		.loc 1 451 0
+ 954 0384 6091 0000 		lds r22,dataport
+ 955 0388 80E0      		ldi r24,0
+ 956 038a 0E94 0000 		call pcf8574_setoutput
+ 957               	.LVL109:
+ 452:src/lcdpcf8574.c **** 
+ 453:src/lcdpcf8574.c ****     lcd_e_toggle();
+ 958               		.loc 1 453 0
+ 959 038e 0E94 0000 		call toggle_e
+ 960               	.LVL110:
+ 961               	.LBB25:
+ 962               	.LBB26:
+  47:src/lcdpcf8574.c ****     	    "1: sbiw %0,1" "\n\t"                  
+ 963               		.loc 1 47 0
+ 964 0392 80EE      		ldi r24,lo8(-32)
+ 965 0394 94E0      		ldi r25,lo8(4)
+ 966               	/* #APP */
+ 967               	 ;  47 "src/lcdpcf8574.c" 1
+ 968 0396 0197      		1: sbiw r24,1
+ 969 0398 01F4      		brne 1b
+ 970               	 ;  0 "" 2
+ 971               	.LVL111:
+ 972               	/* #NOAPP */
+ 973               	.LBE26:
+ 974               	.LBE25:
+ 454:src/lcdpcf8574.c ****     delay(4992);         /* delay, busy flag can't be checked here */
+ 455:src/lcdpcf8574.c **** 
+ 456:src/lcdpcf8574.c ****     /* repeat last command */ 
+ 457:src/lcdpcf8574.c ****     lcd_e_toggle();      
+ 975               		.loc 1 457 0
+ 976 039a 0E94 0000 		call toggle_e
+ 977               	.LVL112:
+ 978               	.LBB27:
+ 979               	.LBB28:
+  47:src/lcdpcf8574.c ****     	    "1: sbiw %0,1" "\n\t"                  
+ 980               		.loc 1 47 0
+ 981 039e C0E1      		ldi r28,lo8(16)
+ 982 03a0 D0E0      		ldi r29,0
+ 983 03a2 CE01      		movw r24,r28
+ 984               	/* #APP */
+ 985               	 ;  47 "src/lcdpcf8574.c" 1
+ 986 03a4 0197      		1: sbiw r24,1
+ 987 03a6 01F4      		brne 1b
+ 988               	 ;  0 "" 2
+ 989               	.LVL113:
+ 990               	/* #NOAPP */
+ 991               	.LBE28:
+ 992               	.LBE27:
+ 458:src/lcdpcf8574.c ****     delay(64);           /* delay, busy flag can't be checked here */
+ 459:src/lcdpcf8574.c ****     
+ 460:src/lcdpcf8574.c ****     /* repeat last command a third time */
+ 461:src/lcdpcf8574.c ****     lcd_e_toggle();      
+ 993               		.loc 1 461 0
+ 994 03a8 0E94 0000 		call toggle_e
+ 995               	.LVL114:
+ 996               	.LBB29:
+ 997               	.LBB30:
+  47:src/lcdpcf8574.c ****     	    "1: sbiw %0,1" "\n\t"                  
+ 998               		.loc 1 47 0
+ 999 03ac CE01      		movw r24,r28
+ 1000               	/* #APP */
+ 1001               	 ;  47 "src/lcdpcf8574.c" 1
+ 1002 03ae 0197      		1: sbiw r24,1
+ 1003 03b0 01F4      		brne 1b
+ 1004               	 ;  0 "" 2
+ 1005               	.LVL115:
+ 1006               	/* #NOAPP */
+ 1007               	.LBE30:
+ 1008               	.LBE29:
+ 462:src/lcdpcf8574.c ****     delay(64);           /* delay, busy flag can't be checked here */
+ 463:src/lcdpcf8574.c **** 
+ 464:src/lcdpcf8574.c ****     /* now configure for 4bit mode */
+ 465:src/lcdpcf8574.c ****     dataport &= ~_BV(LCD_DATA0_PIN);
+ 1009               		.loc 1 465 0
+ 1010 03b2 8091 0000 		lds r24,dataport
+ 1011 03b6 8F7E      		andi r24,lo8(-17)
+ 1012 03b8 8093 0000 		sts dataport,r24
+ 466:src/lcdpcf8574.c ****     pcf8574_setoutput(LCD_PCF8574_DEVICEID, dataport);
+ 1013               		.loc 1 466 0
+ 1014 03bc 6091 0000 		lds r22,dataport
+ 1015 03c0 80E0      		ldi r24,0
+ 1016 03c2 0E94 0000 		call pcf8574_setoutput
+ 1017               	.LVL116:
+ 467:src/lcdpcf8574.c ****     lcd_e_toggle();
+ 1018               		.loc 1 467 0
+ 1019 03c6 0E94 0000 		call toggle_e
+ 1020               	.LVL117:
+ 1021               	.LBB31:
+ 1022               	.LBB32:
+  47:src/lcdpcf8574.c ****     	    "1: sbiw %0,1" "\n\t"                  
+ 1023               		.loc 1 47 0
+ 1024               	/* #APP */
+ 1025               	 ;  47 "src/lcdpcf8574.c" 1
+ 1026 03ca 2197      		1: sbiw r28,1
+ 1027 03cc 01F4      		brne 1b
+ 1028               	 ;  0 "" 2
+ 1029               	.LVL118:
+ 1030               	/* #NOAPP */
+ 1031               	.LBE32:
+ 1032               	.LBE31:
+ 468:src/lcdpcf8574.c ****     delay(64);           /* some displays need this additional delay */
+ 469:src/lcdpcf8574.c ****     
+ 470:src/lcdpcf8574.c ****     /* from now the LCD only accepts 4 bit I/O, we can use lcd_command() */    
+ 471:src/lcdpcf8574.c **** 
+ 472:src/lcdpcf8574.c ****     lcd_command(LCD_FUNCTION_DEFAULT);      /* function set: display lines  */
+ 1033               		.loc 1 472 0
+ 1034 03ce 88E2      		ldi r24,lo8(40)
+ 1035 03d0 0E94 0000 		call lcd_command
+ 1036               	.LVL119:
+ 473:src/lcdpcf8574.c **** 
+ 474:src/lcdpcf8574.c ****     lcd_command(LCD_DISP_OFF);              /* display off                  */
+ 1037               		.loc 1 474 0
+ 1038 03d4 88E0      		ldi r24,lo8(8)
+ 1039 03d6 0E94 0000 		call lcd_command
+ 1040               	.LVL120:
+ 475:src/lcdpcf8574.c ****     lcd_clrscr();                           /* display clear                */
+ 1041               		.loc 1 475 0
+ 1042 03da 0E94 0000 		call lcd_clrscr
+ 1043               	.LVL121:
+ 476:src/lcdpcf8574.c ****     lcd_command(LCD_MODE_DEFAULT);          /* set entry mode               */
+ 1044               		.loc 1 476 0
+ 1045 03de 86E0      		ldi r24,lo8(6)
+ 1046 03e0 0E94 0000 		call lcd_command
+ 1047               	.LVL122:
+ 477:src/lcdpcf8574.c ****     lcd_command(dispAttr);                  /* display/cursor control       */
+ 1048               		.loc 1 477 0
+ 1049 03e4 812F      		mov r24,r17
+ 1050               	/* epilogue start */
+ 478:src/lcdpcf8574.c **** 
+ 479:src/lcdpcf8574.c **** }/* lcd_init */
+ 1051               		.loc 1 479 0
+ 1052 03e6 DF91      		pop r29
+ 1053 03e8 CF91      		pop r28
+ 1054 03ea 1F91      		pop r17
+ 1055               	.LVL123:
+ 477:src/lcdpcf8574.c ****     lcd_command(dispAttr);                  /* display/cursor control       */
+ 1056               		.loc 1 477 0
+ 1057 03ec 0C94 0000 		jmp lcd_command
+ 1058               	.LVL124:
+ 1059               		.cfi_endproc
+ 1060               	.LFE19:
+ 1062               	.global	dataport
+ 1063               		.section .bss
+ 1066               	dataport:
+ 1067 0000 00        		.zero	1
+ 1068               		.comm	pcf8574_pinstatus,1,1
+ 1069               		.text
+ 1070               	.Letext0:
+ 1071               		.file 2 "c:\\winavr-20100110\\avr\\include\\stdint.h"
+ 1072               		.file 3 "./lib/pcf8574.h"
+DEFINED SYMBOLS
+                            *ABS*:00000000 lcdpcf8574.c
+C:\Users\JOHANN~1\AppData\Local\Temp\cc4F82Ty.s:2      *ABS*:0000003e __SP_H__
+C:\Users\JOHANN~1\AppData\Local\Temp\cc4F82Ty.s:3      *ABS*:0000003d __SP_L__
+C:\Users\JOHANN~1\AppData\Local\Temp\cc4F82Ty.s:4      *ABS*:0000003f __SREG__
+C:\Users\JOHANN~1\AppData\Local\Temp\cc4F82Ty.s:5      *ABS*:00000000 __tmp_reg__
+C:\Users\JOHANN~1\AppData\Local\Temp\cc4F82Ty.s:6      *ABS*:00000001 __zero_reg__
+C:\Users\JOHANN~1\AppData\Local\Temp\cc4F82Ty.s:11     .text:00000000 toggle_e
+C:\Users\JOHANN~1\AppData\Local\Temp\cc4F82Ty.s:41     .text:00000012 lcd_write
+C:\Users\JOHANN~1\AppData\Local\Temp\cc4F82Ty.s:1066   .bss:00000000 dataport
+C:\Users\JOHANN~1\AppData\Local\Temp\cc4F82Ty.s:221    .text:0000014c lcd_read.constprop.0
+C:\Users\JOHANN~1\AppData\Local\Temp\cc4F82Ty.s:383    .text:0000020c lcd_waitbusy
+C:\Users\JOHANN~1\AppData\Local\Temp\cc4F82Ty.s:418    .text:0000021a lcd_command
+C:\Users\JOHANN~1\AppData\Local\Temp\cc4F82Ty.s:450    .text:0000022c lcd_data
+C:\Users\JOHANN~1\AppData\Local\Temp\cc4F82Ty.s:482    .text:0000023e lcd_gotoxy
+C:\Users\JOHANN~1\AppData\Local\Temp\cc4F82Ty.s:511    .text:0000024c lcd_getxy
+C:\Users\JOHANN~1\AppData\Local\Temp\cc4F82Ty.s:530    .text:00000254 lcd_clrscr
+C:\Users\JOHANN~1\AppData\Local\Temp\cc4F82Ty.s:547    .text:0000025a lcd_led
+C:\Users\JOHANN~1\AppData\Local\Temp\cc4F82Ty.s:582    .text:0000027a lcd_home
+C:\Users\JOHANN~1\AppData\Local\Temp\cc4F82Ty.s:599    .text:00000280 lcd_putc
+C:\Users\JOHANN~1\AppData\Local\Temp\cc4F82Ty.s:691    .text:000002c2 lcd_clear_CGRAM
+C:\Users\JOHANN~1\AppData\Local\Temp\cc4F82Ty.s:731    .text:000002dc lcd_create_custom_char
+C:\Users\JOHANN~1\AppData\Local\Temp\cc4F82Ty.s:804    .text:00000318 lcd_puts
+C:\Users\JOHANN~1\AppData\Local\Temp\cc4F82Ty.s:846    .text:00000330 lcd_puts_p
+C:\Users\JOHANN~1\AppData\Local\Temp\cc4F82Ty.s:899    .text:0000034e lcd_init
+                            *COM*:00000001 pcf8574_pinstatus
+
+UNDEFINED SYMBOLS
+pcf8574_setoutputpinhigh
+pcf8574_setoutputpinlow
+pcf8574_setoutput
+pcf8574_getinputpin
+pcf8574_init
+__do_clear_bss

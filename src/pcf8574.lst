@@ -1,0 +1,951 @@
+   1               		.file	"pcf8574.c"
+   2               	__SP_H__ = 0x3e
+   3               	__SP_L__ = 0x3d
+   4               	__SREG__ = 0x3f
+   5               	__tmp_reg__ = 0
+   6               	__zero_reg__ = 1
+   7               		.text
+   8               	.Ltext0:
+   9               		.cfi_sections	.debug_frame
+  10               	.global	pcf8574_init
+  12               	pcf8574_init:
+  13               	.LFB6:
+  14               		.file 1 "src/pcf8574.c"
+   1:src/pcf8574.c **** /*
+   2:src/pcf8574.c **** pcf8574 lib 0x02
+   3:src/pcf8574.c **** copyright (c) Davide Gironi, 2012
+   4:src/pcf8574.c **** Released under GPLv3.
+   5:src/pcf8574.c **** Please refer to LICENSE file for licensing information.
+   6:src/pcf8574.c **** */
+   7:src/pcf8574.c **** 
+   8:src/pcf8574.c **** 
+   9:src/pcf8574.c **** #include <avr/io.h>
+  10:src/pcf8574.c **** #include <avr/interrupt.h>
+  11:src/pcf8574.c **** #include <util/delay.h>
+  12:src/pcf8574.c **** 
+  13:src/pcf8574.c **** #include "lib/pcf8574.h"
+  14:src/pcf8574.c **** 
+  15:src/pcf8574.c **** //path to i2c fleury lib
+  16:src/pcf8574.c **** #include "lib/i2cmaster.h"
+  17:src/pcf8574.c **** 
+  18:src/pcf8574.c **** /*
+  19:src/pcf8574.c ****  * initialize
+  20:src/pcf8574.c ****  */
+  21:src/pcf8574.c **** void pcf8574_init() {
+  15               		.loc 1 21 0
+  16               		.cfi_startproc
+  17               	/* prologue: function */
+  18               	/* frame size = 0 */
+  19               	/* stack size = 0 */
+  20               	.L__stack_usage = 0
+  22:src/pcf8574.c **** 	#if PCF8574_I2CINIT == 1
+  23:src/pcf8574.c **** 	//init i2c
+  24:src/pcf8574.c **** 	i2c_init();
+  21               		.loc 1 24 0
+  22 0000 0E94 0000 		call i2c_init
+  23               	.LVL0:
+  24               	.LBB4:
+  25               	.LBB5:
+  26               		.file 2 "c:\\winavr-20100110\\avr\\include\\util\\delay.h"
+   1:c:\winavr-20100110\avr\include\util\delay.h **** /* Copyright (c) 2002, Marek Michalkiewicz
+   2:c:\winavr-20100110\avr\include\util\delay.h ****    Copyright (c) 2004,2005,2007 Joerg Wunsch
+   3:c:\winavr-20100110\avr\include\util\delay.h ****    Copyright (c) 2007  Florin-Viorel Petrov
+   4:c:\winavr-20100110\avr\include\util\delay.h ****    All rights reserved.
+   5:c:\winavr-20100110\avr\include\util\delay.h **** 
+   6:c:\winavr-20100110\avr\include\util\delay.h ****    Redistribution and use in source and binary forms, with or without
+   7:c:\winavr-20100110\avr\include\util\delay.h ****    modification, are permitted provided that the following conditions are met:
+   8:c:\winavr-20100110\avr\include\util\delay.h **** 
+   9:c:\winavr-20100110\avr\include\util\delay.h ****    * Redistributions of source code must retain the above copyright
+  10:c:\winavr-20100110\avr\include\util\delay.h ****      notice, this list of conditions and the following disclaimer.
+  11:c:\winavr-20100110\avr\include\util\delay.h **** 
+  12:c:\winavr-20100110\avr\include\util\delay.h ****    * Redistributions in binary form must reproduce the above copyright
+  13:c:\winavr-20100110\avr\include\util\delay.h ****      notice, this list of conditions and the following disclaimer in
+  14:c:\winavr-20100110\avr\include\util\delay.h ****      the documentation and/or other materials provided with the
+  15:c:\winavr-20100110\avr\include\util\delay.h ****      distribution.
+  16:c:\winavr-20100110\avr\include\util\delay.h **** 
+  17:c:\winavr-20100110\avr\include\util\delay.h ****    * Neither the name of the copyright holders nor the names of
+  18:c:\winavr-20100110\avr\include\util\delay.h ****      contributors may be used to endorse or promote products derived
+  19:c:\winavr-20100110\avr\include\util\delay.h ****      from this software without specific prior written permission.
+  20:c:\winavr-20100110\avr\include\util\delay.h **** 
+  21:c:\winavr-20100110\avr\include\util\delay.h ****   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+  22:c:\winavr-20100110\avr\include\util\delay.h ****   AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+  23:c:\winavr-20100110\avr\include\util\delay.h ****   IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+  24:c:\winavr-20100110\avr\include\util\delay.h ****   ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+  25:c:\winavr-20100110\avr\include\util\delay.h ****   LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+  26:c:\winavr-20100110\avr\include\util\delay.h ****   CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+  27:c:\winavr-20100110\avr\include\util\delay.h ****   SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+  28:c:\winavr-20100110\avr\include\util\delay.h ****   INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+  29:c:\winavr-20100110\avr\include\util\delay.h ****   CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+  30:c:\winavr-20100110\avr\include\util\delay.h ****   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+  31:c:\winavr-20100110\avr\include\util\delay.h ****   POSSIBILITY OF SUCH DAMAGE. */
+  32:c:\winavr-20100110\avr\include\util\delay.h **** 
+  33:c:\winavr-20100110\avr\include\util\delay.h **** /* $Id$ */
+  34:c:\winavr-20100110\avr\include\util\delay.h **** 
+  35:c:\winavr-20100110\avr\include\util\delay.h **** #ifndef _UTIL_DELAY_H_
+  36:c:\winavr-20100110\avr\include\util\delay.h **** #define _UTIL_DELAY_H_ 1
+  37:c:\winavr-20100110\avr\include\util\delay.h **** 
+  38:c:\winavr-20100110\avr\include\util\delay.h **** #ifndef __DOXYGEN__
+  39:c:\winavr-20100110\avr\include\util\delay.h **** #  ifndef __HAS_DELAY_CYCLES
+  40:c:\winavr-20100110\avr\include\util\delay.h **** #    define __HAS_DELAY_CYCLES 1
+  41:c:\winavr-20100110\avr\include\util\delay.h **** #  endif
+  42:c:\winavr-20100110\avr\include\util\delay.h **** #endif  /* __DOXYGEN__ */
+  43:c:\winavr-20100110\avr\include\util\delay.h **** 
+  44:c:\winavr-20100110\avr\include\util\delay.h **** #include <inttypes.h>
+  45:c:\winavr-20100110\avr\include\util\delay.h **** #include <util/delay_basic.h>
+  46:c:\winavr-20100110\avr\include\util\delay.h **** #include <math.h>
+  47:c:\winavr-20100110\avr\include\util\delay.h **** 
+  48:c:\winavr-20100110\avr\include\util\delay.h **** /** \file */
+  49:c:\winavr-20100110\avr\include\util\delay.h **** /** \defgroup util_delay <util/delay.h>: Convenience functions for busy-wait delay loops
+  50:c:\winavr-20100110\avr\include\util\delay.h ****     \code
+  51:c:\winavr-20100110\avr\include\util\delay.h ****     #define F_CPU 1000000UL  // 1 MHz
+  52:c:\winavr-20100110\avr\include\util\delay.h ****     //#define F_CPU 14.7456E6
+  53:c:\winavr-20100110\avr\include\util\delay.h ****     #include <util/delay.h>
+  54:c:\winavr-20100110\avr\include\util\delay.h ****     \endcode
+  55:c:\winavr-20100110\avr\include\util\delay.h **** 
+  56:c:\winavr-20100110\avr\include\util\delay.h ****     \note As an alternative method, it is possible to pass the
+  57:c:\winavr-20100110\avr\include\util\delay.h ****     F_CPU macro down to the compiler from the Makefile.
+  58:c:\winavr-20100110\avr\include\util\delay.h ****     Obviously, in that case, no \c \#define statement should be
+  59:c:\winavr-20100110\avr\include\util\delay.h ****     used.
+  60:c:\winavr-20100110\avr\include\util\delay.h **** 
+  61:c:\winavr-20100110\avr\include\util\delay.h ****     The functions in this header file are wrappers around the basic
+  62:c:\winavr-20100110\avr\include\util\delay.h ****     busy-wait functions from <util/delay_basic.h>.  They are meant as
+  63:c:\winavr-20100110\avr\include\util\delay.h ****     convenience functions where actual time values can be specified
+  64:c:\winavr-20100110\avr\include\util\delay.h ****     rather than a number of cycles to wait for.  The idea behind is
+  65:c:\winavr-20100110\avr\include\util\delay.h ****     that compile-time constant expressions will be eliminated by
+  66:c:\winavr-20100110\avr\include\util\delay.h ****     compiler optimization so floating-point expressions can be used
+  67:c:\winavr-20100110\avr\include\util\delay.h ****     to calculate the number of delay cycles needed based on the CPU
+  68:c:\winavr-20100110\avr\include\util\delay.h ****     frequency passed by the macro F_CPU.
+  69:c:\winavr-20100110\avr\include\util\delay.h **** 
+  70:c:\winavr-20100110\avr\include\util\delay.h ****     \note In order for these functions to work as intended, compiler
+  71:c:\winavr-20100110\avr\include\util\delay.h ****     optimizations <em>must</em> be enabled, and the delay time
+  72:c:\winavr-20100110\avr\include\util\delay.h ****     <em>must</em> be an expression that is a known constant at
+  73:c:\winavr-20100110\avr\include\util\delay.h ****     compile-time.  If these requirements are not met, the resulting
+  74:c:\winavr-20100110\avr\include\util\delay.h ****     delay will be much longer (and basically unpredictable), and
+  75:c:\winavr-20100110\avr\include\util\delay.h ****     applications that otherwise do not use floating-point calculations
+  76:c:\winavr-20100110\avr\include\util\delay.h ****     will experience severe code bloat by the floating-point library
+  77:c:\winavr-20100110\avr\include\util\delay.h ****     routines linked into the application.
+  78:c:\winavr-20100110\avr\include\util\delay.h **** 
+  79:c:\winavr-20100110\avr\include\util\delay.h ****     The functions available allow the specification of microsecond, and
+  80:c:\winavr-20100110\avr\include\util\delay.h ****     millisecond delays directly, using the application-supplied macro
+  81:c:\winavr-20100110\avr\include\util\delay.h ****     F_CPU as the CPU clock frequency (in Hertz).
+  82:c:\winavr-20100110\avr\include\util\delay.h **** 
+  83:c:\winavr-20100110\avr\include\util\delay.h **** */
+  84:c:\winavr-20100110\avr\include\util\delay.h **** 
+  85:c:\winavr-20100110\avr\include\util\delay.h **** #if !defined(__DOXYGEN__)
+  86:c:\winavr-20100110\avr\include\util\delay.h **** static __inline__ void _delay_us(double __us) __attribute__((__always_inline__));
+  87:c:\winavr-20100110\avr\include\util\delay.h **** static __inline__ void _delay_ms(double __ms) __attribute__((__always_inline__));
+  88:c:\winavr-20100110\avr\include\util\delay.h **** #endif
+  89:c:\winavr-20100110\avr\include\util\delay.h **** 
+  90:c:\winavr-20100110\avr\include\util\delay.h **** #ifndef F_CPU
+  91:c:\winavr-20100110\avr\include\util\delay.h **** /* prevent compiler error by supplying a default */
+  92:c:\winavr-20100110\avr\include\util\delay.h **** # warning "F_CPU not defined for <util/delay.h>"
+  93:c:\winavr-20100110\avr\include\util\delay.h **** /** \ingroup util_delay
+  94:c:\winavr-20100110\avr\include\util\delay.h ****     \def F_CPU
+  95:c:\winavr-20100110\avr\include\util\delay.h ****     \brief CPU frequency in Hz
+  96:c:\winavr-20100110\avr\include\util\delay.h **** 
+  97:c:\winavr-20100110\avr\include\util\delay.h ****     The macro F_CPU specifies the CPU frequency to be considered by
+  98:c:\winavr-20100110\avr\include\util\delay.h ****     the delay macros.  This macro is normally supplied by the
+  99:c:\winavr-20100110\avr\include\util\delay.h ****     environment (e.g. from within a project header, or the project's
+ 100:c:\winavr-20100110\avr\include\util\delay.h ****     Makefile).  The value 1 MHz here is only provided as a "vanilla"
+ 101:c:\winavr-20100110\avr\include\util\delay.h ****     fallback if no such user-provided definition could be found.
+ 102:c:\winavr-20100110\avr\include\util\delay.h **** 
+ 103:c:\winavr-20100110\avr\include\util\delay.h ****     In terms of the delay functions, the CPU frequency can be given as
+ 104:c:\winavr-20100110\avr\include\util\delay.h ****     a floating-point constant (e.g. 3.6864E6 for 3.6864 MHz).
+ 105:c:\winavr-20100110\avr\include\util\delay.h ****     However, the macros in <util/setbaud.h> require it to be an
+ 106:c:\winavr-20100110\avr\include\util\delay.h ****     integer value.
+ 107:c:\winavr-20100110\avr\include\util\delay.h ****  */
+ 108:c:\winavr-20100110\avr\include\util\delay.h **** # define F_CPU 1000000UL
+ 109:c:\winavr-20100110\avr\include\util\delay.h **** #endif
+ 110:c:\winavr-20100110\avr\include\util\delay.h **** 
+ 111:c:\winavr-20100110\avr\include\util\delay.h **** #ifndef __OPTIMIZE__
+ 112:c:\winavr-20100110\avr\include\util\delay.h **** # warning "Compiler optimizations disabled; functions from <util/delay.h> won't work as designed"
+ 113:c:\winavr-20100110\avr\include\util\delay.h **** #endif
+ 114:c:\winavr-20100110\avr\include\util\delay.h **** 
+ 115:c:\winavr-20100110\avr\include\util\delay.h **** #if __HAS_DELAY_CYCLES && defined(__OPTIMIZE__) && \
+ 116:c:\winavr-20100110\avr\include\util\delay.h ****   !defined(__DELAY_BACKWARD_COMPATIBLE__) &&	   \
+ 117:c:\winavr-20100110\avr\include\util\delay.h ****   __STDC_HOSTED__
+ 118:c:\winavr-20100110\avr\include\util\delay.h **** #  include <math.h>
+ 119:c:\winavr-20100110\avr\include\util\delay.h **** #endif
+ 120:c:\winavr-20100110\avr\include\util\delay.h **** 
+ 121:c:\winavr-20100110\avr\include\util\delay.h **** /**
+ 122:c:\winavr-20100110\avr\include\util\delay.h ****    \ingroup util_delay
+ 123:c:\winavr-20100110\avr\include\util\delay.h **** 
+ 124:c:\winavr-20100110\avr\include\util\delay.h ****    Perform a delay of \c __ms milliseconds, using _delay_loop_2().
+ 125:c:\winavr-20100110\avr\include\util\delay.h **** 
+ 126:c:\winavr-20100110\avr\include\util\delay.h ****    The macro F_CPU is supposed to be defined to a
+ 127:c:\winavr-20100110\avr\include\util\delay.h ****    constant defining the CPU clock frequency (in Hertz).
+ 128:c:\winavr-20100110\avr\include\util\delay.h **** 
+ 129:c:\winavr-20100110\avr\include\util\delay.h ****    The maximal possible delay is 262.14 ms / F_CPU in MHz.
+ 130:c:\winavr-20100110\avr\include\util\delay.h **** 
+ 131:c:\winavr-20100110\avr\include\util\delay.h ****    When the user request delay which exceed the maximum possible one,
+ 132:c:\winavr-20100110\avr\include\util\delay.h ****    _delay_ms() provides a decreased resolution functionality. In this
+ 133:c:\winavr-20100110\avr\include\util\delay.h ****    mode _delay_ms() will work with a resolution of 1/10 ms, providing
+ 134:c:\winavr-20100110\avr\include\util\delay.h ****    delays up to 6.5535 seconds (independent from CPU frequency).  The
+ 135:c:\winavr-20100110\avr\include\util\delay.h ****    user will not be informed about decreased resolution.
+ 136:c:\winavr-20100110\avr\include\util\delay.h **** 
+ 137:c:\winavr-20100110\avr\include\util\delay.h ****    If the avr-gcc toolchain has __builtin_avr_delay_cycles()
+ 138:c:\winavr-20100110\avr\include\util\delay.h ****    support, maximal possible delay is 4294967.295 ms/ F_CPU in MHz. For
+ 139:c:\winavr-20100110\avr\include\util\delay.h ****    values greater than the maximal possible delay, overflows results in
+ 140:c:\winavr-20100110\avr\include\util\delay.h ****    no delay i.e., 0ms.
+ 141:c:\winavr-20100110\avr\include\util\delay.h **** 
+ 142:c:\winavr-20100110\avr\include\util\delay.h ****    Conversion of \c __ms into clock cycles may not always result in
+ 143:c:\winavr-20100110\avr\include\util\delay.h ****    integer.  By default, the clock cycles rounded up to next
+ 144:c:\winavr-20100110\avr\include\util\delay.h ****    integer. This ensures that the user gets at least \c __ms
+ 145:c:\winavr-20100110\avr\include\util\delay.h ****    microseconds of delay.
+ 146:c:\winavr-20100110\avr\include\util\delay.h **** 
+ 147:c:\winavr-20100110\avr\include\util\delay.h ****    Alternatively, by defining the macro \c __DELAY_ROUND_DOWN__, or
+ 148:c:\winavr-20100110\avr\include\util\delay.h ****    \c __DELAY_ROUND_CLOSEST__, before including this header file, the
+ 149:c:\winavr-20100110\avr\include\util\delay.h ****    algorithm can be made to round down, or round to closest integer,
+ 150:c:\winavr-20100110\avr\include\util\delay.h ****    respectively.
+ 151:c:\winavr-20100110\avr\include\util\delay.h **** 
+ 152:c:\winavr-20100110\avr\include\util\delay.h ****    \note
+ 153:c:\winavr-20100110\avr\include\util\delay.h **** 
+ 154:c:\winavr-20100110\avr\include\util\delay.h ****    The implementation of _delay_ms() based on
+ 155:c:\winavr-20100110\avr\include\util\delay.h ****    __builtin_avr_delay_cycles() is not backward compatible with older
+ 156:c:\winavr-20100110\avr\include\util\delay.h ****    implementations.  In order to get functionality backward compatible
+ 157:c:\winavr-20100110\avr\include\util\delay.h ****    with previous versions, the macro \c "__DELAY_BACKWARD_COMPATIBLE__"
+ 158:c:\winavr-20100110\avr\include\util\delay.h ****    must be defined before including this header file. Also, the
+ 159:c:\winavr-20100110\avr\include\util\delay.h ****    backward compatible algorithm will be chosen if the code is
+ 160:c:\winavr-20100110\avr\include\util\delay.h ****    compiled in a <em>freestanding environment</em> (GCC option
+ 161:c:\winavr-20100110\avr\include\util\delay.h ****    \c -ffreestanding), as the math functions required for rounding are
+ 162:c:\winavr-20100110\avr\include\util\delay.h ****    not available to the compiler then.
+ 163:c:\winavr-20100110\avr\include\util\delay.h **** 
+ 164:c:\winavr-20100110\avr\include\util\delay.h ****  */
+ 165:c:\winavr-20100110\avr\include\util\delay.h **** void
+ 166:c:\winavr-20100110\avr\include\util\delay.h **** _delay_ms(double __ms)
+ 167:c:\winavr-20100110\avr\include\util\delay.h **** {
+ 168:c:\winavr-20100110\avr\include\util\delay.h **** 	double __tmp ;
+ 169:c:\winavr-20100110\avr\include\util\delay.h **** #if __HAS_DELAY_CYCLES && defined(__OPTIMIZE__) && \
+ 170:c:\winavr-20100110\avr\include\util\delay.h ****   !defined(__DELAY_BACKWARD_COMPATIBLE__) &&	   \
+ 171:c:\winavr-20100110\avr\include\util\delay.h ****   __STDC_HOSTED__
+ 172:c:\winavr-20100110\avr\include\util\delay.h **** 	uint32_t __ticks_dc;
+ 173:c:\winavr-20100110\avr\include\util\delay.h **** 	extern void __builtin_avr_delay_cycles(unsigned long);
+ 174:c:\winavr-20100110\avr\include\util\delay.h **** 	__tmp = ((F_CPU) / 1e3) * __ms;
+ 175:c:\winavr-20100110\avr\include\util\delay.h **** 
+ 176:c:\winavr-20100110\avr\include\util\delay.h **** 	#if defined(__DELAY_ROUND_DOWN__)
+ 177:c:\winavr-20100110\avr\include\util\delay.h **** 		__ticks_dc = (uint32_t)fabs(__tmp);
+ 178:c:\winavr-20100110\avr\include\util\delay.h **** 
+ 179:c:\winavr-20100110\avr\include\util\delay.h **** 	#elif defined(__DELAY_ROUND_CLOSEST__)
+ 180:c:\winavr-20100110\avr\include\util\delay.h **** 		__ticks_dc = (uint32_t)(fabs(__tmp)+0.5);
+ 181:c:\winavr-20100110\avr\include\util\delay.h **** 
+ 182:c:\winavr-20100110\avr\include\util\delay.h **** 	#else
+ 183:c:\winavr-20100110\avr\include\util\delay.h **** 		//round up by default
+ 184:c:\winavr-20100110\avr\include\util\delay.h **** 		__ticks_dc = (uint32_t)(ceil(fabs(__tmp)));
+ 185:c:\winavr-20100110\avr\include\util\delay.h **** 	#endif
+ 186:c:\winavr-20100110\avr\include\util\delay.h **** 
+ 187:c:\winavr-20100110\avr\include\util\delay.h **** 	__builtin_avr_delay_cycles(__ticks_dc);
+ 188:c:\winavr-20100110\avr\include\util\delay.h **** 
+ 189:c:\winavr-20100110\avr\include\util\delay.h **** #else
+ 190:c:\winavr-20100110\avr\include\util\delay.h **** 	uint16_t __ticks;
+ 191:c:\winavr-20100110\avr\include\util\delay.h **** 	__tmp = ((F_CPU) / 4e3) * __ms;
+ 192:c:\winavr-20100110\avr\include\util\delay.h **** 	if (__tmp < 1.0)
+ 193:c:\winavr-20100110\avr\include\util\delay.h **** 		__ticks = 1;
+ 194:c:\winavr-20100110\avr\include\util\delay.h **** 	else if (__tmp > 65535)
+ 195:c:\winavr-20100110\avr\include\util\delay.h **** 	{
+ 196:c:\winavr-20100110\avr\include\util\delay.h **** 		//	__ticks = requested delay in 1/10 ms
+ 197:c:\winavr-20100110\avr\include\util\delay.h **** 		__ticks = (uint16_t) (__ms * 10.0);
+ 198:c:\winavr-20100110\avr\include\util\delay.h **** 		while(__ticks)
+ 199:c:\winavr-20100110\avr\include\util\delay.h **** 		{
+ 200:c:\winavr-20100110\avr\include\util\delay.h **** 			// wait 1/10 ms
+ 201:c:\winavr-20100110\avr\include\util\delay.h **** 			_delay_loop_2(((F_CPU) / 4e3) / 10);
+ 202:c:\winavr-20100110\avr\include\util\delay.h **** 			__ticks --;
+ 203:c:\winavr-20100110\avr\include\util\delay.h **** 		}
+ 204:c:\winavr-20100110\avr\include\util\delay.h **** 		return;
+ 205:c:\winavr-20100110\avr\include\util\delay.h **** 	}
+ 206:c:\winavr-20100110\avr\include\util\delay.h **** 	else
+ 207:c:\winavr-20100110\avr\include\util\delay.h **** 		__ticks = (uint16_t)__tmp;
+ 208:c:\winavr-20100110\avr\include\util\delay.h **** 	_delay_loop_2(__ticks);
+ 209:c:\winavr-20100110\avr\include\util\delay.h **** #endif
+ 210:c:\winavr-20100110\avr\include\util\delay.h **** }
+ 211:c:\winavr-20100110\avr\include\util\delay.h **** 
+ 212:c:\winavr-20100110\avr\include\util\delay.h **** /**
+ 213:c:\winavr-20100110\avr\include\util\delay.h ****    \ingroup util_delay
+ 214:c:\winavr-20100110\avr\include\util\delay.h **** 
+ 215:c:\winavr-20100110\avr\include\util\delay.h ****    Perform a delay of \c __us microseconds, using _delay_loop_1().
+ 216:c:\winavr-20100110\avr\include\util\delay.h **** 
+ 217:c:\winavr-20100110\avr\include\util\delay.h ****    The macro F_CPU is supposed to be defined to a
+ 218:c:\winavr-20100110\avr\include\util\delay.h ****    constant defining the CPU clock frequency (in Hertz).
+ 219:c:\winavr-20100110\avr\include\util\delay.h **** 
+ 220:c:\winavr-20100110\avr\include\util\delay.h ****    The maximal possible delay is 768 us / F_CPU in MHz.
+ 221:c:\winavr-20100110\avr\include\util\delay.h **** 
+ 222:c:\winavr-20100110\avr\include\util\delay.h ****    If the user requests a delay greater than the maximal possible one,
+ 223:c:\winavr-20100110\avr\include\util\delay.h ****    _delay_us() will automatically call _delay_ms() instead.  The user
+ 224:c:\winavr-20100110\avr\include\util\delay.h ****    will not be informed about this case.
+ 225:c:\winavr-20100110\avr\include\util\delay.h **** 
+ 226:c:\winavr-20100110\avr\include\util\delay.h ****    If the avr-gcc toolchain has __builtin_avr_delay_cycles()
+ 227:c:\winavr-20100110\avr\include\util\delay.h ****    support, maximal possible delay is 4294967.295 us/ F_CPU in MHz. For
+ 228:c:\winavr-20100110\avr\include\util\delay.h ****    values greater than the maximal possible delay, overflow results in
+ 229:c:\winavr-20100110\avr\include\util\delay.h ****    no delay i.e., 0us.
+ 230:c:\winavr-20100110\avr\include\util\delay.h **** 
+ 231:c:\winavr-20100110\avr\include\util\delay.h ****    Conversion of \c __us into clock cycles may not always result in
+ 232:c:\winavr-20100110\avr\include\util\delay.h ****    integer.  By default, the clock cycles rounded up to next
+ 233:c:\winavr-20100110\avr\include\util\delay.h ****    integer. This ensures that the user gets at least \c __us
+ 234:c:\winavr-20100110\avr\include\util\delay.h ****    microseconds of delay.
+ 235:c:\winavr-20100110\avr\include\util\delay.h **** 
+ 236:c:\winavr-20100110\avr\include\util\delay.h ****    Alternatively, by defining the macro \c __DELAY_ROUND_DOWN__, or
+ 237:c:\winavr-20100110\avr\include\util\delay.h ****    \c __DELAY_ROUND_CLOSEST__, before including this header file, the
+ 238:c:\winavr-20100110\avr\include\util\delay.h ****    algorithm can be made to round down, or round to closest integer,
+ 239:c:\winavr-20100110\avr\include\util\delay.h ****    respectively.
+ 240:c:\winavr-20100110\avr\include\util\delay.h **** 
+ 241:c:\winavr-20100110\avr\include\util\delay.h ****    \note
+ 242:c:\winavr-20100110\avr\include\util\delay.h **** 
+ 243:c:\winavr-20100110\avr\include\util\delay.h ****    The implementation of _delay_ms() based on
+ 244:c:\winavr-20100110\avr\include\util\delay.h ****    __builtin_avr_delay_cycles() is not backward compatible with older
+ 245:c:\winavr-20100110\avr\include\util\delay.h ****    implementations.  In order to get functionality backward compatible
+ 246:c:\winavr-20100110\avr\include\util\delay.h ****    with previous versions, the macro \c __DELAY_BACKWARD_COMPATIBLE__
+ 247:c:\winavr-20100110\avr\include\util\delay.h ****    must be defined before including this header file. Also, the
+ 248:c:\winavr-20100110\avr\include\util\delay.h ****    backward compatible algorithm will be chosen if the code is
+ 249:c:\winavr-20100110\avr\include\util\delay.h ****    compiled in a <em>freestanding environment</em> (GCC option
+ 250:c:\winavr-20100110\avr\include\util\delay.h ****    \c -ffreestanding), as the math functions required for rounding are
+ 251:c:\winavr-20100110\avr\include\util\delay.h ****    not available to the compiler then.
+ 252:c:\winavr-20100110\avr\include\util\delay.h **** 
+ 253:c:\winavr-20100110\avr\include\util\delay.h ****  */
+ 254:c:\winavr-20100110\avr\include\util\delay.h **** void
+ 255:c:\winavr-20100110\avr\include\util\delay.h **** _delay_us(double __us)
+ 256:c:\winavr-20100110\avr\include\util\delay.h **** {
+ 257:c:\winavr-20100110\avr\include\util\delay.h **** 	double __tmp ;
+ 258:c:\winavr-20100110\avr\include\util\delay.h **** #if __HAS_DELAY_CYCLES && defined(__OPTIMIZE__) && \
+ 259:c:\winavr-20100110\avr\include\util\delay.h ****   !defined(__DELAY_BACKWARD_COMPATIBLE__) &&	   \
+ 260:c:\winavr-20100110\avr\include\util\delay.h ****   __STDC_HOSTED__
+ 261:c:\winavr-20100110\avr\include\util\delay.h **** 	uint32_t __ticks_dc;
+ 262:c:\winavr-20100110\avr\include\util\delay.h **** 	extern void __builtin_avr_delay_cycles(unsigned long);
+ 263:c:\winavr-20100110\avr\include\util\delay.h **** 	__tmp = ((F_CPU) / 1e6) * __us;
+ 264:c:\winavr-20100110\avr\include\util\delay.h **** 
+ 265:c:\winavr-20100110\avr\include\util\delay.h **** 	#if defined(__DELAY_ROUND_DOWN__)
+ 266:c:\winavr-20100110\avr\include\util\delay.h **** 		__ticks_dc = (uint32_t)fabs(__tmp);
+ 267:c:\winavr-20100110\avr\include\util\delay.h **** 
+ 268:c:\winavr-20100110\avr\include\util\delay.h **** 	#elif defined(__DELAY_ROUND_CLOSEST__)
+ 269:c:\winavr-20100110\avr\include\util\delay.h **** 		__ticks_dc = (uint32_t)(fabs(__tmp)+0.5);
+ 270:c:\winavr-20100110\avr\include\util\delay.h **** 
+ 271:c:\winavr-20100110\avr\include\util\delay.h **** 	#else
+ 272:c:\winavr-20100110\avr\include\util\delay.h **** 		//round up by default
+ 273:c:\winavr-20100110\avr\include\util\delay.h **** 		__ticks_dc = (uint32_t)(ceil(fabs(__tmp)));
+ 274:c:\winavr-20100110\avr\include\util\delay.h **** 	#endif
+ 275:c:\winavr-20100110\avr\include\util\delay.h **** 
+ 276:c:\winavr-20100110\avr\include\util\delay.h **** 	__builtin_avr_delay_cycles(__ticks_dc);
+  27               		.loc 2 276 0
+  28 0004 85E3      		ldi r24,lo8(53)
+  29 0006 8A95      	1:	dec r24
+  30 0008 01F4      		brne 1b
+  31 000a 0000      		nop
+  32               	.LVL1:
+  33               	.LBE5:
+  34               	.LBE4:
+  25:src/pcf8574.c **** 	_delay_us(10);
+  26:src/pcf8574.c **** 	#endif
+  27:src/pcf8574.c **** 
+  28:src/pcf8574.c **** 	//reset the pin status
+  29:src/pcf8574.c **** 	uint8_t i = 0;
+  30:src/pcf8574.c **** 	for(i=0; i<PCF8574_MAXDEVICES; i++)
+  31:src/pcf8574.c **** 		pcf8574_pinstatus[i] = 0;
+  35               		.loc 1 31 0
+  36 000c 1092 0000 		sts pcf8574_pinstatus,__zero_reg__
+  37               	.LVL2:
+  38 0010 0895      		ret
+  39               		.cfi_endproc
+  40               	.LFE6:
+  42               	.global	pcf8574_getoutput
+  44               	pcf8574_getoutput:
+  45               	.LFB7:
+  32:src/pcf8574.c **** 
+  33:src/pcf8574.c **** }
+  34:src/pcf8574.c **** 
+  35:src/pcf8574.c **** /*
+  36:src/pcf8574.c ****  * get output status
+  37:src/pcf8574.c ****  */
+  38:src/pcf8574.c **** int8_t pcf8574_getoutput(uint8_t deviceid) {
+  46               		.loc 1 38 0
+  47               		.cfi_startproc
+  48               	.LVL3:
+  49               	/* prologue: function */
+  50               	/* frame size = 0 */
+  51               	/* stack size = 0 */
+  52               	.L__stack_usage = 0
+  39:src/pcf8574.c **** 	int8_t data = -1;
+  40:src/pcf8574.c **** 	if((deviceid >= 0 && deviceid < PCF8574_MAXDEVICES)) {
+  53               		.loc 1 40 0
+  54 0012 8111      		cpse r24,__zero_reg__
+  55 0014 00C0      		rjmp .L4
+  41:src/pcf8574.c **** 		data = pcf8574_pinstatus[deviceid];
+  56               		.loc 1 41 0
+  57 0016 8091 0000 		lds r24,pcf8574_pinstatus
+  58               	.LVL4:
+  59 001a 0895      		ret
+  60               	.LVL5:
+  61               	.L4:
+  39:src/pcf8574.c **** 	int8_t data = -1;
+  62               		.loc 1 39 0
+  63 001c 8FEF      		ldi r24,lo8(-1)
+  64               	.LVL6:
+  42:src/pcf8574.c **** 	}
+  43:src/pcf8574.c **** 	return data;
+  44:src/pcf8574.c **** }
+  65               		.loc 1 44 0
+  66 001e 0895      		ret
+  67               		.cfi_endproc
+  68               	.LFE7:
+  70               	.global	pcf8574_getoutputpin
+  72               	pcf8574_getoutputpin:
+  73               	.LFB8:
+  45:src/pcf8574.c **** 
+  46:src/pcf8574.c **** /*
+  47:src/pcf8574.c ****  * get output pin status
+  48:src/pcf8574.c ****  */
+  49:src/pcf8574.c **** int8_t pcf8574_getoutputpin(uint8_t deviceid, uint8_t pin) {
+  74               		.loc 1 49 0
+  75               		.cfi_startproc
+  76               	.LVL7:
+  77               	/* prologue: function */
+  78               	/* frame size = 0 */
+  79               	/* stack size = 0 */
+  80               	.L__stack_usage = 0
+  50:src/pcf8574.c **** 	int8_t data = -1;
+  51:src/pcf8574.c **** 	if((deviceid >= 0 && deviceid < PCF8574_MAXDEVICES) && (pin >= 0 && pin < PCF8574_MAXPINS)) {
+  81               		.loc 1 51 0
+  82 0020 8111      		cpse r24,__zero_reg__
+  83 0022 00C0      		rjmp .L9
+  84               		.loc 1 51 0 is_stmt 0 discriminator 1
+  85 0024 6830      		cpi r22,lo8(8)
+  86 0026 00F4      		brsh .L9
+  52:src/pcf8574.c **** 		data = pcf8574_pinstatus[deviceid];
+  87               		.loc 1 52 0 is_stmt 1
+  88 0028 8091 0000 		lds r24,pcf8574_pinstatus
+  89               	.LVL8:
+  53:src/pcf8574.c **** 		data = (data >> pin) & 0b00000001;
+  90               		.loc 1 53 0
+  91 002c 082E      		mov __tmp_reg__,r24
+  92 002e 000C      		lsl r0
+  93 0030 990B      		sbc r25,r25
+  94 0032 00C0      		rjmp 2f
+  95               		1:
+  96 0034 9595      		asr r25
+  97 0036 8795      		ror r24
+  98               		2:
+  99 0038 6A95      		dec r22
+ 100 003a 02F4      		brpl 1b
+ 101               	.LVL9:
+ 102 003c 8170      		andi r24,lo8(1)
+ 103               	.LVL10:
+ 104 003e 0895      		ret
+ 105               	.LVL11:
+ 106               	.L9:
+  50:src/pcf8574.c **** 	int8_t data = -1;
+ 107               		.loc 1 50 0
+ 108 0040 8FEF      		ldi r24,lo8(-1)
+ 109               	.LVL12:
+  54:src/pcf8574.c **** 	}
+  55:src/pcf8574.c **** 	return data;
+  56:src/pcf8574.c **** }
+ 110               		.loc 1 56 0
+ 111 0042 0895      		ret
+ 112               		.cfi_endproc
+ 113               	.LFE8:
+ 115               	.global	pcf8574_setoutput
+ 117               	pcf8574_setoutput:
+ 118               	.LFB9:
+  57:src/pcf8574.c **** 
+  58:src/pcf8574.c **** /*
+  59:src/pcf8574.c ****  * set output pins
+  60:src/pcf8574.c ****  */
+  61:src/pcf8574.c **** int8_t pcf8574_setoutput(uint8_t deviceid, uint8_t data) {
+ 119               		.loc 1 61 0
+ 120               		.cfi_startproc
+ 121               	.LVL13:
+ 122 0044 CF93      		push r28
+ 123               	.LCFI0:
+ 124               		.cfi_def_cfa_offset 3
+ 125               		.cfi_offset 28, -2
+ 126               	/* prologue: function */
+ 127               	/* frame size = 0 */
+ 128               	/* stack size = 1 */
+ 129               	.L__stack_usage = 1
+  62:src/pcf8574.c **** 	if((deviceid >= 0 && deviceid < PCF8574_MAXDEVICES)) {
+ 130               		.loc 1 62 0
+ 131 0046 8111      		cpse r24,__zero_reg__
+ 132 0048 00C0      		rjmp .L12
+ 133 004a C62F      		mov r28,r22
+  63:src/pcf8574.c **** 		pcf8574_pinstatus[deviceid] = data;
+ 134               		.loc 1 63 0
+ 135 004c 6093 0000 		sts pcf8574_pinstatus,r22
+  64:src/pcf8574.c **** 		i2c_start(((PCF8574_ADDRBASE+deviceid)<<1) | I2C_WRITE);
+ 136               		.loc 1 64 0
+ 137 0050 8EE4      		ldi r24,lo8(78)
+ 138               	.LVL14:
+ 139 0052 0E94 0000 		call i2c_start
+ 140               	.LVL15:
+  65:src/pcf8574.c **** 		i2c_write(data);
+ 141               		.loc 1 65 0
+ 142 0056 8C2F      		mov r24,r28
+ 143 0058 0E94 0000 		call i2c_write
+ 144               	.LVL16:
+  66:src/pcf8574.c **** 		i2c_stop();
+ 145               		.loc 1 66 0
+ 146 005c 0E94 0000 		call i2c_stop
+ 147               	.LVL17:
+  67:src/pcf8574.c **** 		return 0;
+ 148               		.loc 1 67 0
+ 149 0060 80E0      		ldi r24,0
+ 150 0062 00C0      		rjmp .L11
+ 151               	.LVL18:
+ 152               	.L12:
+  68:src/pcf8574.c **** 	}
+  69:src/pcf8574.c **** 	return -1;
+ 153               		.loc 1 69 0
+ 154 0064 8FEF      		ldi r24,lo8(-1)
+ 155               	.LVL19:
+ 156               	.L11:
+ 157               	/* epilogue start */
+  70:src/pcf8574.c **** }
+ 158               		.loc 1 70 0
+ 159 0066 CF91      		pop r28
+ 160 0068 0895      		ret
+ 161               		.cfi_endproc
+ 162               	.LFE9:
+ 164               	.global	pcf8574_setoutputpins
+ 166               	pcf8574_setoutputpins:
+ 167               	.LFB10:
+  71:src/pcf8574.c **** 
+  72:src/pcf8574.c **** /*
+  73:src/pcf8574.c ****  * set output pins, replace actual status of a device from pinstart for pinlength with data
+  74:src/pcf8574.c ****  */
+  75:src/pcf8574.c **** int8_t pcf8574_setoutputpins(uint8_t deviceid, uint8_t pinstart, uint8_t pinlength, int8_t data) {
+ 168               		.loc 1 75 0
+ 169               		.cfi_startproc
+ 170               	.LVL20:
+ 171 006a CF93      		push r28
+ 172               	.LCFI1:
+ 173               		.cfi_def_cfa_offset 3
+ 174               		.cfi_offset 28, -2
+ 175               	/* prologue: function */
+ 176               	/* frame size = 0 */
+ 177               	/* stack size = 1 */
+ 178               	.L__stack_usage = 1
+  76:src/pcf8574.c **** 	//example:
+  77:src/pcf8574.c **** 	//actual data is         0b01101110
+  78:src/pcf8574.c **** 	//want to change              ---
+  79:src/pcf8574.c **** 	//pinstart                    4
+  80:src/pcf8574.c **** 	//data                        101   (pinlength 3)
+  81:src/pcf8574.c **** 	//result                 0b01110110
+  82:src/pcf8574.c **** 	if((deviceid >= 0 && deviceid < PCF8574_MAXDEVICES) && (pinstart - pinlength + 1 >= 0 && pinstart 
+ 179               		.loc 1 82 0
+ 180 006c 8111      		cpse r24,__zero_reg__
+ 181 006e 00C0      		rjmp .L18
+ 182               		.loc 1 82 0 is_stmt 0 discriminator 1
+ 183 0070 E62F      		mov r30,r22
+ 184 0072 F0E0      		ldi r31,0
+ 185 0074 E41B      		sub r30,r20
+ 186 0076 F109      		sbc r31,__zero_reg__
+ 187 0078 EF3F      		cpi r30,-1
+ 188 007a 8FEF      		ldi r24,-1
+ 189 007c F807      		cpc r31,r24
+ 190               	.LVL21:
+ 191 007e 04F0      		brlt .L18
+ 192               		.loc 1 82 0 discriminator 3
+ 193 0080 6150      		subi r22,lo8(-(-1))
+ 194               	.LVL22:
+ 195 0082 6730      		cpi r22,lo8(7)
+ 196 0084 00F4      		brsh .L18
+ 197               		.loc 1 82 0 discriminator 4
+ 198 0086 4423      		tst r20
+ 199 0088 01F0      		breq .L18
+ 200 008a 842F      		mov r24,r20
+ 201               	.LVL23:
+ 202               	.LBB6:
+  83:src/pcf8574.c **** 	    uint8_t b = 0;
+  84:src/pcf8574.c **** 	    b = pcf8574_pinstatus[deviceid];
+ 203               		.loc 1 84 0 is_stmt 1
+ 204 008c C091 0000 		lds r28,pcf8574_pinstatus
+ 205               	.LVL24:
+  85:src/pcf8574.c **** 	    uint8_t mask = ((1 << pinlength) - 1) << (pinstart - pinlength + 1);
+ 206               		.loc 1 85 0
+ 207 0090 BF01      		movw r22,r30
+ 208               	.LVL25:
+ 209 0092 6F5F      		subi r22,-1
+ 210 0094 7F4F      		sbci r23,-1
+  86:src/pcf8574.c **** 		data <<= (pinstart - pinlength + 1);
+ 211               		.loc 1 86 0
+ 212 0096 022E      		mov __tmp_reg__,r18
+ 213 0098 000C      		lsl r0
+ 214 009a 330B      		sbc r19,r19
+ 215 009c 062E      		mov r0,r22
+ 216 009e 00C0      		rjmp 2f
+ 217               		1:
+ 218 00a0 220F      		lsl r18
+ 219               		2:
+ 220 00a2 0A94      		dec r0
+ 221 00a4 02F4      		brpl 1b
+ 222               	.LVL26:
+  87:src/pcf8574.c **** 		data &= mask;
+  88:src/pcf8574.c **** 		b &= ~(mask);
+  89:src/pcf8574.c **** 		b |= data;
+ 223               		.loc 1 89 0
+ 224 00a6 41E0      		ldi r20,lo8(1)
+ 225 00a8 50E0      		ldi r21,0
+ 226               	.LVL27:
+ 227 00aa 00C0      		rjmp 2f
+ 228               		1:
+ 229 00ac 440F      		lsl r20
+ 230 00ae 551F      		rol r21
+ 231               		2:
+ 232 00b0 8A95      		dec r24
+ 233 00b2 02F4      		brpl 1b
+ 234 00b4 4150      		subi r20,1
+ 235 00b6 5109      		sbc r21,__zero_reg__
+ 236 00b8 00C0      		rjmp 2f
+ 237               		1:
+ 238 00ba 440F      		lsl r20
+ 239               		2:
+ 240 00bc 6A95      		dec r22
+ 241 00be 02F4      		brpl 1b
+ 242 00c0 2C27      		eor r18,r28
+ 243 00c2 4223      		and r20,r18
+ 244 00c4 C427      		eor r28,r20
+ 245               	.LVL28:
+  90:src/pcf8574.c **** 	    pcf8574_pinstatus[deviceid] = b;
+ 246               		.loc 1 90 0
+ 247 00c6 C093 0000 		sts pcf8574_pinstatus,r28
+  91:src/pcf8574.c **** 	    //update device
+  92:src/pcf8574.c **** 		i2c_start(((PCF8574_ADDRBASE+deviceid)<<1) | I2C_WRITE);
+ 248               		.loc 1 92 0
+ 249 00ca 8EE4      		ldi r24,lo8(78)
+ 250               	.LVL29:
+ 251 00cc 0E94 0000 		call i2c_start
+ 252               	.LVL30:
+  93:src/pcf8574.c **** 		i2c_write(b);
+ 253               		.loc 1 93 0
+ 254 00d0 8C2F      		mov r24,r28
+ 255 00d2 0E94 0000 		call i2c_write
+ 256               	.LVL31:
+  94:src/pcf8574.c **** 		i2c_stop();
+ 257               		.loc 1 94 0
+ 258 00d6 0E94 0000 		call i2c_stop
+ 259               	.LVL32:
+  95:src/pcf8574.c **** 		return 0;
+ 260               		.loc 1 95 0
+ 261 00da 80E0      		ldi r24,0
+ 262 00dc 00C0      		rjmp .L14
+ 263               	.LVL33:
+ 264               	.L18:
+ 265               	.LBE6:
+  96:src/pcf8574.c **** 	}
+  97:src/pcf8574.c **** 	return -1;
+ 266               		.loc 1 97 0
+ 267 00de 8FEF      		ldi r24,lo8(-1)
+ 268               	.LVL34:
+ 269               	.L14:
+ 270               	/* epilogue start */
+  98:src/pcf8574.c **** }
+ 271               		.loc 1 98 0
+ 272 00e0 CF91      		pop r28
+ 273 00e2 0895      		ret
+ 274               		.cfi_endproc
+ 275               	.LFE10:
+ 277               	.global	pcf8574_setoutputpin
+ 279               	pcf8574_setoutputpin:
+ 280               	.LFB11:
+  99:src/pcf8574.c **** 
+ 100:src/pcf8574.c **** /*
+ 101:src/pcf8574.c ****  * set output pin
+ 102:src/pcf8574.c ****  */
+ 103:src/pcf8574.c **** int8_t pcf8574_setoutputpin(uint8_t deviceid, uint8_t pin, uint8_t data) {
+ 281               		.loc 1 103 0
+ 282               		.cfi_startproc
+ 283               	.LVL35:
+ 284 00e4 CF93      		push r28
+ 285               	.LCFI2:
+ 286               		.cfi_def_cfa_offset 3
+ 287               		.cfi_offset 28, -2
+ 288 00e6 DF93      		push r29
+ 289               	.LCFI3:
+ 290               		.cfi_def_cfa_offset 4
+ 291               		.cfi_offset 29, -3
+ 292               	/* prologue: function */
+ 293               	/* frame size = 0 */
+ 294               	/* stack size = 2 */
+ 295               	.L__stack_usage = 2
+ 104:src/pcf8574.c **** 	if((deviceid >= 0 && deviceid < PCF8574_MAXDEVICES) && (pin >= 0 && pin < PCF8574_MAXPINS)) {
+ 296               		.loc 1 104 0
+ 297 00e8 8111      		cpse r24,__zero_reg__
+ 298 00ea 00C0      		rjmp .L24
+ 299               		.loc 1 104 0 is_stmt 0 discriminator 1
+ 300 00ec 6830      		cpi r22,lo8(8)
+ 301 00ee 00F4      		brsh .L24
+ 302               	.LVL36:
+ 303               	.LBB7:
+ 105:src/pcf8574.c **** 	    uint8_t b = 0;
+ 106:src/pcf8574.c **** 	    b = pcf8574_pinstatus[deviceid];
+ 304               		.loc 1 106 0 is_stmt 1
+ 305 00f0 8091 0000 		lds r24,pcf8574_pinstatus
+ 306               	.LVL37:
+ 107:src/pcf8574.c **** 	    b = (data != 0) ? (b | (1 << pin)) : (b & ~(1 << pin));
+ 307               		.loc 1 107 0
+ 308 00f4 C1E0      		ldi r28,lo8(1)
+ 309 00f6 D0E0      		ldi r29,0
+ 310 00f8 00C0      		rjmp 2f
+ 311               		1:
+ 312 00fa CC0F      		lsl r28
+ 313               		2:
+ 314 00fc 6A95      		dec r22
+ 315 00fe 02F4      		brpl 1b
+ 316 0100 4423      		tst r20
+ 317 0102 01F0      		breq .L21
+ 318               		.loc 1 107 0 is_stmt 0 discriminator 1
+ 319 0104 C82B      		or r28,r24
+ 320 0106 00C0      		rjmp .L22
+ 321               	.L21:
+ 322               		.loc 1 107 0 discriminator 2
+ 323 0108 C095      		com r28
+ 324 010a C823      		and r28,r24
+ 325               	.L22:
+ 326               	.LVL38:
+ 108:src/pcf8574.c **** 	    pcf8574_pinstatus[deviceid] = b;
+ 327               		.loc 1 108 0 is_stmt 1 discriminator 4
+ 328 010c C093 0000 		sts pcf8574_pinstatus,r28
+ 109:src/pcf8574.c **** 	    //update device
+ 110:src/pcf8574.c **** 		i2c_start(((PCF8574_ADDRBASE+deviceid)<<1) | I2C_WRITE);
+ 329               		.loc 1 110 0 discriminator 4
+ 330 0110 8EE4      		ldi r24,lo8(78)
+ 331 0112 0E94 0000 		call i2c_start
+ 332               	.LVL39:
+ 111:src/pcf8574.c **** 		i2c_write(b);
+ 333               		.loc 1 111 0 discriminator 4
+ 334 0116 8C2F      		mov r24,r28
+ 335 0118 0E94 0000 		call i2c_write
+ 336               	.LVL40:
+ 112:src/pcf8574.c **** 		i2c_stop();
+ 337               		.loc 1 112 0 discriminator 4
+ 338 011c 0E94 0000 		call i2c_stop
+ 339               	.LVL41:
+ 113:src/pcf8574.c **** 		return 0;
+ 340               		.loc 1 113 0 discriminator 4
+ 341 0120 80E0      		ldi r24,0
+ 342 0122 00C0      		rjmp .L20
+ 343               	.LVL42:
+ 344               	.L24:
+ 345               	.LBE7:
+ 114:src/pcf8574.c **** 	}
+ 115:src/pcf8574.c **** 	return -1;
+ 346               		.loc 1 115 0
+ 347 0124 8FEF      		ldi r24,lo8(-1)
+ 348               	.LVL43:
+ 349               	.L20:
+ 350               	/* epilogue start */
+ 116:src/pcf8574.c **** }
+ 351               		.loc 1 116 0
+ 352 0126 DF91      		pop r29
+ 353 0128 CF91      		pop r28
+ 354 012a 0895      		ret
+ 355               		.cfi_endproc
+ 356               	.LFE11:
+ 358               	.global	pcf8574_setoutputpinhigh
+ 360               	pcf8574_setoutputpinhigh:
+ 361               	.LFB12:
+ 117:src/pcf8574.c **** 
+ 118:src/pcf8574.c **** /*
+ 119:src/pcf8574.c ****  * set output pin high
+ 120:src/pcf8574.c ****  */
+ 121:src/pcf8574.c **** int8_t pcf8574_setoutputpinhigh(uint8_t deviceid, uint8_t pin) {
+ 362               		.loc 1 121 0
+ 363               		.cfi_startproc
+ 364               	.LVL44:
+ 365               	/* prologue: function */
+ 366               	/* frame size = 0 */
+ 367               	/* stack size = 0 */
+ 368               	.L__stack_usage = 0
+ 122:src/pcf8574.c **** 	return pcf8574_setoutputpin(deviceid, pin, 1);
+ 369               		.loc 1 122 0
+ 370 012c 41E0      		ldi r20,lo8(1)
+ 371 012e 0C94 0000 		jmp pcf8574_setoutputpin
+ 372               	.LVL45:
+ 373               		.cfi_endproc
+ 374               	.LFE12:
+ 376               	.global	pcf8574_setoutputpinlow
+ 378               	pcf8574_setoutputpinlow:
+ 379               	.LFB13:
+ 123:src/pcf8574.c **** }
+ 124:src/pcf8574.c **** 
+ 125:src/pcf8574.c **** /*
+ 126:src/pcf8574.c ****  * set output pin low
+ 127:src/pcf8574.c ****  */
+ 128:src/pcf8574.c **** int8_t pcf8574_setoutputpinlow(uint8_t deviceid, uint8_t pin) {
+ 380               		.loc 1 128 0
+ 381               		.cfi_startproc
+ 382               	.LVL46:
+ 383               	/* prologue: function */
+ 384               	/* frame size = 0 */
+ 385               	/* stack size = 0 */
+ 386               	.L__stack_usage = 0
+ 129:src/pcf8574.c **** 	return pcf8574_setoutputpin(deviceid, pin, 0);
+ 387               		.loc 1 129 0
+ 388 0132 40E0      		ldi r20,0
+ 389 0134 0C94 0000 		jmp pcf8574_setoutputpin
+ 390               	.LVL47:
+ 391               		.cfi_endproc
+ 392               	.LFE13:
+ 394               	.global	pcf8574_getinput
+ 396               	pcf8574_getinput:
+ 397               	.LFB14:
+ 130:src/pcf8574.c **** }
+ 131:src/pcf8574.c **** 
+ 132:src/pcf8574.c **** 
+ 133:src/pcf8574.c **** /*
+ 134:src/pcf8574.c ****  * get input data
+ 135:src/pcf8574.c ****  */
+ 136:src/pcf8574.c **** int8_t pcf8574_getinput(uint8_t deviceid) {
+ 398               		.loc 1 136 0
+ 399               		.cfi_startproc
+ 400               	.LVL48:
+ 401 0138 CF93      		push r28
+ 402               	.LCFI4:
+ 403               		.cfi_def_cfa_offset 3
+ 404               		.cfi_offset 28, -2
+ 405               	/* prologue: function */
+ 406               	/* frame size = 0 */
+ 407               	/* stack size = 1 */
+ 408               	.L__stack_usage = 1
+ 409               	.LVL49:
+ 137:src/pcf8574.c **** 	int8_t data = -1;
+ 138:src/pcf8574.c **** 	if((deviceid >= 0 && deviceid < PCF8574_MAXDEVICES)) {
+ 410               		.loc 1 138 0
+ 411 013a 8111      		cpse r24,__zero_reg__
+ 412 013c 00C0      		rjmp .L29
+ 139:src/pcf8574.c **** 		i2c_start(((PCF8574_ADDRBASE+deviceid)<<1) | I2C_READ);
+ 413               		.loc 1 139 0
+ 414 013e 8FE4      		ldi r24,lo8(79)
+ 415               	.LVL50:
+ 416 0140 0E94 0000 		call i2c_start
+ 417               	.LVL51:
+ 140:src/pcf8574.c **** 		data = ~i2c_readNak();
+ 418               		.loc 1 140 0
+ 419 0144 0E94 0000 		call i2c_readNak
+ 420               	.LVL52:
+ 421 0148 C82F      		mov r28,r24
+ 422 014a C095      		com r28
+ 423               	.LVL53:
+ 141:src/pcf8574.c **** 		i2c_stop();
+ 424               		.loc 1 141 0
+ 425 014c 0E94 0000 		call i2c_stop
+ 426               	.LVL54:
+ 427 0150 00C0      		rjmp .L28
+ 428               	.LVL55:
+ 429               	.L29:
+ 137:src/pcf8574.c **** 	if((deviceid >= 0 && deviceid < PCF8574_MAXDEVICES)) {
+ 430               		.loc 1 137 0
+ 431 0152 CFEF      		ldi r28,lo8(-1)
+ 432               	.LVL56:
+ 433               	.L28:
+ 142:src/pcf8574.c **** 	}
+ 143:src/pcf8574.c **** 	return data;
+ 144:src/pcf8574.c **** }
+ 434               		.loc 1 144 0
+ 435 0154 8C2F      		mov r24,r28
+ 436               	/* epilogue start */
+ 437 0156 CF91      		pop r28
+ 438               	.LVL57:
+ 439 0158 0895      		ret
+ 440               		.cfi_endproc
+ 441               	.LFE14:
+ 443               	.global	pcf8574_getinputpin
+ 445               	pcf8574_getinputpin:
+ 446               	.LFB15:
+ 145:src/pcf8574.c **** 
+ 146:src/pcf8574.c **** /*
+ 147:src/pcf8574.c ****  * get input pin (up or low)
+ 148:src/pcf8574.c ****  */
+ 149:src/pcf8574.c **** int8_t pcf8574_getinputpin(uint8_t deviceid, uint8_t pin) {
+ 447               		.loc 1 149 0
+ 448               		.cfi_startproc
+ 449               	.LVL58:
+ 450 015a CF93      		push r28
+ 451               	.LCFI5:
+ 452               		.cfi_def_cfa_offset 3
+ 453               		.cfi_offset 28, -2
+ 454               	/* prologue: function */
+ 455               	/* frame size = 0 */
+ 456               	/* stack size = 1 */
+ 457               	.L__stack_usage = 1
+ 458               	.LVL59:
+ 150:src/pcf8574.c **** 	int8_t data = -1;
+ 151:src/pcf8574.c **** 	if((deviceid >= 0 && deviceid < PCF8574_MAXDEVICES) && (pin >= 0 && pin < PCF8574_MAXPINS)) {
+ 459               		.loc 1 151 0
+ 460 015c 8823      		tst r24
+ 461 015e 01F0      		breq .L31
+ 462               	.LVL60:
+ 463               	.L33:
+ 150:src/pcf8574.c **** 	int8_t data = -1;
+ 464               		.loc 1 150 0
+ 465 0160 8FEF      		ldi r24,lo8(-1)
+ 466 0162 00C0      		rjmp .L32
+ 467               	.LVL61:
+ 468               	.L31:
+ 469               		.loc 1 151 0 discriminator 1
+ 470 0164 6830      		cpi r22,lo8(8)
+ 471 0166 00F4      		brsh .L33
+ 472 0168 C62F      		mov r28,r22
+ 152:src/pcf8574.c **** 		data = pcf8574_getinput(deviceid);
+ 473               		.loc 1 152 0
+ 474 016a 80E0      		ldi r24,0
+ 475               	.LVL62:
+ 476 016c 0E94 0000 		call pcf8574_getinput
+ 477               	.LVL63:
+ 153:src/pcf8574.c **** 		if(data != -1) {
+ 478               		.loc 1 153 0
+ 479 0170 8F3F      		cpi r24,lo8(-1)
+ 480 0172 01F0      		breq .L33
+ 154:src/pcf8574.c **** 			data = (data >> pin) & 0b00000001;
+ 481               		.loc 1 154 0
+ 482 0174 082E      		mov __tmp_reg__,r24
+ 483 0176 000C      		lsl r0
+ 484 0178 990B      		sbc r25,r25
+ 485 017a 00C0      		rjmp 2f
+ 486               		1:
+ 487 017c 9595      		asr r25
+ 488 017e 8795      		ror r24
+ 489               		2:
+ 490 0180 CA95      		dec r28
+ 491 0182 02F4      		brpl 1b
+ 492               	.LVL64:
+ 493 0184 8170      		andi r24,lo8(1)
+ 494               	.LVL65:
+ 495               	.L32:
+ 496               	/* epilogue start */
+ 155:src/pcf8574.c **** 		}
+ 156:src/pcf8574.c **** 	}
+ 157:src/pcf8574.c **** 	return data;
+ 158:src/pcf8574.c **** }
+ 497               		.loc 1 158 0
+ 498 0186 CF91      		pop r28
+ 499 0188 0895      		ret
+ 500               		.cfi_endproc
+ 501               	.LFE15:
+ 503               		.comm	pcf8574_pinstatus,1,1
+ 504               	.Letext0:
+ 505               		.file 3 "c:\\winavr-20100110\\avr\\include\\stdint.h"
+ 506               		.file 4 "./lib/i2cmaster.h"
+ 507               		.file 5 "./lib/pcf8574.h"
+DEFINED SYMBOLS
+                            *ABS*:00000000 pcf8574.c
+C:\Users\JOHANN~1\AppData\Local\Temp\ccLzcGdn.s:2      *ABS*:0000003e __SP_H__
+C:\Users\JOHANN~1\AppData\Local\Temp\ccLzcGdn.s:3      *ABS*:0000003d __SP_L__
+C:\Users\JOHANN~1\AppData\Local\Temp\ccLzcGdn.s:4      *ABS*:0000003f __SREG__
+C:\Users\JOHANN~1\AppData\Local\Temp\ccLzcGdn.s:5      *ABS*:00000000 __tmp_reg__
+C:\Users\JOHANN~1\AppData\Local\Temp\ccLzcGdn.s:6      *ABS*:00000001 __zero_reg__
+C:\Users\JOHANN~1\AppData\Local\Temp\ccLzcGdn.s:12     .text:00000000 pcf8574_init
+                            *COM*:00000001 pcf8574_pinstatus
+C:\Users\JOHANN~1\AppData\Local\Temp\ccLzcGdn.s:44     .text:00000012 pcf8574_getoutput
+C:\Users\JOHANN~1\AppData\Local\Temp\ccLzcGdn.s:72     .text:00000020 pcf8574_getoutputpin
+C:\Users\JOHANN~1\AppData\Local\Temp\ccLzcGdn.s:117    .text:00000044 pcf8574_setoutput
+C:\Users\JOHANN~1\AppData\Local\Temp\ccLzcGdn.s:166    .text:0000006a pcf8574_setoutputpins
+C:\Users\JOHANN~1\AppData\Local\Temp\ccLzcGdn.s:279    .text:000000e4 pcf8574_setoutputpin
+C:\Users\JOHANN~1\AppData\Local\Temp\ccLzcGdn.s:360    .text:0000012c pcf8574_setoutputpinhigh
+C:\Users\JOHANN~1\AppData\Local\Temp\ccLzcGdn.s:378    .text:00000132 pcf8574_setoutputpinlow
+C:\Users\JOHANN~1\AppData\Local\Temp\ccLzcGdn.s:396    .text:00000138 pcf8574_getinput
+C:\Users\JOHANN~1\AppData\Local\Temp\ccLzcGdn.s:445    .text:0000015a pcf8574_getinputpin
+
+UNDEFINED SYMBOLS
+i2c_init
+i2c_start
+i2c_write
+i2c_stop
+i2c_readNak
+__do_clear_bss
